@@ -1,0 +1,46 @@
+[
+  {
+    "name": "track-segmentation",
+    "organization": "U.S. Geological Survey",
+    "description": "Track Segmentation: Stops and Movements",
+    "version": "v1.0.0",
+    "status": "Production",
+
+    "permissions": {
+      "usageType": "openSource",
+      "licenses": [
+        {
+          "name": "Public Domain, CC0-1.0",
+          "URL": "https://code.usgs.gov/asc/track-segmentation/-/raw/v1.0.0/LICENSE.md"
+        }
+      ]
+    },
+
+    "homepageURL": "https://code.usgs.gov/asc/track-segmentation/",
+    "downloadURL": "https://code.usgs.gov/asc/track-segmentation/-/archive/v1.0.0/track-segmentation-v1.0.0.zip",
+    "disclaimerURL": "https://code.usgs.gov/asc/track-segmentation/-/raw/v1.0.0/DISCLAIMER.md",
+    "repositoryURL": "https://code.usgs.gov/asc/track-segmentation.git",
+    "vcs": "git",
+
+    "laborHours": -1,
+
+    "tags": [
+    "USGS",
+    "Scientific software",
+    "usgs|doi: https://doi.org/10.5066/P13QURM9"
+    ],
+
+    "languages": [
+      "R"
+    ],
+
+    "contact": {
+      "name": " U.S. Geological Survey, Alaska Science Center",
+      "email": "gs-ak_asc_datamanagers@usgs.gov"
+    },
+
+    "date": {
+      "metadataLastUpdated": "2025-07-09"
+    }
+  }
+]
