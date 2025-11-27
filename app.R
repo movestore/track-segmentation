@@ -69,7 +69,7 @@ results <- data |>
   dplyr::group_by(animal_id) |>
   dplyr::group_split() |>
   lapply(function(animal_data) {
-    find_periods_recursive(animal_data, 1, min_hours = minimum_hours_threshold, max_days = max_days_threshold)
+    find_periods_recursive(animal_data, 1, min_hours = minimum_hours_threshold, max_days = max_days_threshold, proximity = proximity_distance_meters)
   }) |>
   bind_rows()
 
@@ -128,15 +128,15 @@ tier1 <- tier1 %>%
   mutate(
     w = 
       ifelse(lc=='G', 5000, 
-        ifelse(lc=='4', 5000, 
-          ifelse(lc=='3', 1000, 
-            ifelse(lc=='2',  500, 
-              ifelse(lc=='1',  300, 
-                ifelse(lc=='0',   50,
-                  ifelse(lc=='A',  100,
-                    ifelse(lc=='B',   10,
-                      ifelse(lc=='Z',    5, 1)
-                    )))))))))
+             ifelse(lc=='4', 5000, 
+                    ifelse(lc=='3', 1000, 
+                           ifelse(lc=='2',  500, 
+                                  ifelse(lc=='1',  300, 
+                                         ifelse(lc=='0',   50,
+                                                ifelse(lc=='A',  100,
+                                                       ifelse(lc=='B',   10,
+                                                              ifelse(lc=='Z',    5, 1)
+                                                       )))))))))
 
 tier2lon <- calculate_weighted_longitude(sf::st_drop_geometry(tier1))
 
@@ -229,7 +229,7 @@ resultsMeta <- meta %>%
   group_by(animal_id) %>%
   group_split() %>%
   lapply(function(animal_data) {
-    find_periods_recursive(animal_data, 1, min_hours = minimum_hours_threshold, max_days = max_days_threshold)
+    find_periods_recursive(animal_data, 1, min_hours = minimum_hours_threshold, max_days = max_days_threshold, proximity = proximity_distance_meters)
   }) %>%
   bind_rows()
 
@@ -357,19 +357,19 @@ lc_colors   <- prepOut$lc_colors
 pal         <- prepOut$palette
 
 # Now update the UI object....
-uiOut <- build_ui()
-ui    <- uiOut$ui
+# uiOut <- build_ui(proximity = proximity_distance_meters, min_hours = minimum_hours_threshold, name = studyName)
+# ui    <- uiOut$ui
 
 # ------------------------------------------------------------------------------
 
 ui <- fluidPage(
-  ui
+  ui2(data = dataLeaflet, min_hours = minimum_hours_threshold, step = definedSeed)
 )
 
 server <- function(input, output, session) {
   # Create the initial base map...
   output$map <- renderLeaflet({
-    create_base_map()
+    create_base_map(sf::st_bbox(sf::st_as_sf(dataLeaflet, coords = c("longitude", "latitude"))))
   })
   
   # Update tracking data when time range changes...

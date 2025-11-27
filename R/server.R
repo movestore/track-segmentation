@@ -47,7 +47,7 @@ sanitize_studyName <- function(studyName) {
   return(cleaned_studyName)
 }
 
-find_periods_recursive <- function(df, start_idx, min_hours, max_days) {
+find_periods_recursive <- function(df, start_idx, min_hours, max_days, proximity) {
   if(length(start_idx) == 0) start_idx <- nrow(df)
   if (start_idx >= nrow(df)) {
     return(NULL)
@@ -73,7 +73,7 @@ find_periods_recursive <- function(df, start_idx, min_hours, max_days) {
       distances <- geosphere::distHaversine(prev_coords, next_coords)
       
       # Check if all distances are within threshold....
-      if (all(distances < proximity_distance_meters)) {
+      if (all(distances < proximity)) {
         time_diff <- as.numeric(difftime(df$timestamp[current_idx + 1],
                                          df$timestamp[current_start],
                                          units = "hours"))
@@ -264,7 +264,6 @@ create_base_map <- function() {
                                           imperial = FALSE,  # Do not show imperial units (feet/miles)...
                                           maxWidth = 400))  # Max width of the scale bar...
 }
-
 
 add_tracking_data <- function(map, data, time_range) {
   # Filter data based on time range....
