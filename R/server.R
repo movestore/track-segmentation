@@ -245,16 +245,16 @@ prepare_data <- function() {
   
 }
 
-
-create_base_map <- function() {
-  leaflet(options = leafletOptions(maxZoom = 22)) %>%
+create_base_map <- function(bbox) {
+  leaflet() %>%
     addTiles(group = "OpenStreetMap") %>%
+    fitBounds(
+      lng1 = bbox[["xmin"]],
+      lat1 = bbox[["ymin"]],
+      lng2 = bbox[["xmax"]],
+      lat2 = bbox[["ymax"]]
+    ) |> 
     addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
-    addLayersControl(
-      baseGroups = c( "Satellite", "OpenStreetMap"),
-      overlayGroups = character(0),  # Start with empty overlay groups...
-      options = layersControlOptions(collapsed = FALSE)
-    ) %>%
     addDrawToolbar(
       editOptions=editToolbarOptions(selectedPathOptions=selectedPathOptions())
     ) %>% 
