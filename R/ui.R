@@ -103,7 +103,7 @@
 #   return(list(ui = ui))
 # }
 
-time_range_slider <- function(data, min_hours, step) {
+time_range_slider <- function(data, step) {
   sliderInput(
     "timeRange",
     paste(
@@ -126,7 +126,7 @@ time_range_slider <- function(data, min_hours, step) {
   )
 }
 
-segmentation_panel <- function() {
+segmentation_panel <- function(proximity, min_hours) {
   div(
     absolutePanel(
       style = "
@@ -138,16 +138,16 @@ segmentation_panel <- function() {
       top = 125, 
       left = 75, 
       width = 300,
-      sliderInput("proximity", "Max distance proximity", min = 0, max = 1000, value = 100),
-      sliderInput("min-hours", "Minimum hours threshold", min = 0, max = 24, value = 12)
+      sliderInput("proximity", "Max distance proximity", min = 0, max = 1000, value = proximity),
+      sliderInput("min-hours", "Minimum hours threshold", min = 0, max = 24, value = min_hours)
     )
   )
 }
 
-ui2 <- function(data, min_hours, step) {
+ui2 <- function(data, min_hours, proximity, step) {
   tagList(
-    time_range_slider(data, min_hours, step),
-    segmentation_panel(),
+    time_range_slider(data, step),
+    segmentation_panel(proximity = proximity, min_hours = min_hours),
     # div(
     #   tags$style(type = "text/css", "
     #     #map {
