@@ -229,7 +229,6 @@ data_for_leaflet <- function(data) {
     mutate(
       animal_id = as.factor(animal_id),
       myRadius = stopover_to_radius(stopover),
-      locType = stopover_to_label(stopover),
       latitude = gis_lat,
       longitude = gis_elon,
       n_stops = n_locs,

@@ -7,9 +7,11 @@ library(leaflet.extras)
 source("R/ui.R")
 source("R/server.R")
 source("R/segmentation.R")
+source("R/output.R")
 
 min_hours <- 12
 proximity <- 150
+study_name <- "my_test_study"
 
 # This will ultimately come from previous MoveApp
 data <- readRDS("~/Documents/projects/track-segmentation/data/raw/input1_move2loc_LatLon.rds")
@@ -74,6 +76,12 @@ tier5 <- bind_rows(transit_locs,tier1,tier4) %>%
              gis_lon
            ))
 
+# For output ---------
+
+stops_output <- prep_stops_output(tier5)
+
+# --------------------
+
 meta <- stops_to_metastops(tier5)
 
 meta2 <- find_periods_move2(
@@ -92,12 +100,35 @@ ready <- tier5 %>%
   mutate(metastop = replace_na(metastop, 0))
 
 ready4 <- tidy_metastop_data(ready)
+ready4 <- ready4 |> mutate(locType = stopover_to_label(stopover))
+
+# For output ----------
+
+metastop_output <- prep_metastops_output(ready4)
+location_output <- prep_location_output(ready4, metastop_output)
+
+# ---------------------
+
+# Write ---------------
+
+# TODO This could be a separate tab panel in the app and there could
+# be a button to export? Not sure how app triggered export works in MoveApps Shiny
+# exactly
+write_results(
+  location_output, 
+  stops_output, 
+  metastop_output, 
+  proximity = proximity, 
+  min_hours = min_hours, 
+  study_name = study_name
+)
+
+# ---------------------
 
 # First update the data preparation....
 dataLeaflet <- data_for_leaflet(ready4)
 lc_colors <- lc_colors()
 pal <- stopover_pal()
-
 
 # ------------------------------------------------------------------------------
 
