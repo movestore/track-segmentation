@@ -105,3 +105,16 @@ write_results <- function(transit, stops, metastops, proximity, min_hours, study
   
   zip::zip(zip_file, files = unlist(files), mode = "cherry-pick")
 }
+
+app_version <- function() {
+  "014"
+}
+
+sanitize_studyName <- function(studyName) {
+  # Invalid Windows filename characters...
+  invalid_chars <- "[<>:\"/\\\\|?*]"
+  # Replace invalid characters with an underscore...
+  cleaned_studyName <- gsub(invalid_chars, "_", studyName)
+  return(cleaned_studyName)
+}
+

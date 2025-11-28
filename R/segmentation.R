@@ -30,6 +30,114 @@ move2_to_seg <- function(data) {
   data
 }
 
+check_data_frame <- function(df) {
+  required_columns <- c("animal_id", "timestamp", "latitude", "longitude", "lc", "species")
+  
+  # Check for presence of all required columns
+  if (!all(required_columns %in% names(df))) {
+    missing_cols <- setdiff(required_columns, names(df))
+    stop(paste("Missing required columns:", paste(missing_cols, collapse = ", ")))
+  }
+  
+  # Check types
+  if (!is.character(df$animal_id)) stop("animal_id must be of type character.")
+  if (!inherits(df$timestamp, "POSIXct")) stop("timestamp must be of class POSIXct.")
+  if (!is.numeric(df$latitude)) stop("latitude must be numeric.")
+  if (!is.numeric(df$longitude)) stop("longitude must be numeric.")
+  if (!is.character(df$lc)) stop("lc must be of type character.")
+  if (!is.character(df$species)) stop("species must be of type character.")
+  
+  # Check value ranges
+  if (any(df$latitude < -90 | df$latitude > 90, na.rm = TRUE)) {
+    stop("latitude values must be between -90 and 90.")
+  }
+  if (any(df$longitude < -180 | df$longitude > 180, na.rm = TRUE)) {
+    stop("longitude values must be between -180 and 180.")
+  }
+  
+  # Check 'lc' values
+  valid_lc <- c("3", "2", "1", "0", "A", "B", "Z", "G")
+  if (!all(df$lc %in% valid_lc)) {
+    invalid_lc <- unique(df$lc[!df$lc %in% valid_lc])
+    stop(paste("Invalid lc values found:", paste(invalid_lc, collapse = ", ")))
+  }
+  
+  message("\nData frame passed all checks.")
+  return(TRUE)
+}
+
+find_periods_recursive <- function(df, start_idx, min_hours, max_days, proximity) {
+  if(length(start_idx) == 0) start_idx <- nrow(df)
+  if (start_idx >= nrow(df)) {
+    return(NULL)
+  }
+  
+  results <- list()
+  current_start <- start_idx
+  
+  while(current_start < nrow(df)) {
+    # Initialize variables for current period....
+    current_idx <- current_start
+    valid_period <- FALSE
+    
+    # Iterative replacement for check_next_point....
+    while(current_idx < nrow(df)) {
+      # Pre-calculate coordinates matrices for efficiency....
+      prev_coords <- matrix(c(df$longitude[current_start:current_idx],
+                              df$latitude[current_start:current_idx]), ncol = 2)
+      next_coords <- matrix(c(df$longitude[current_idx + 1],
+                              df$latitude[current_idx + 1]), ncol = 2)
+      
+      # Calculate distances....
+      distances <- geosphere::distHaversine(prev_coords, next_coords)
+      
+      # Check if all distances are within threshold....
+      if (all(distances < proximity)) {
+        time_diff <- as.numeric(difftime(df$timestamp[current_idx + 1],
+                                         df$timestamp[current_start],
+                                         units = "hours"))
+        
+        if (time_diff <= (max_days * 24)) {
+          current_idx <- current_idx + 1
+          next
+        }
+      }
+      break
+    }
+    
+    # Check if period is valid....
+    if (current_idx > current_start) {
+      time_diff <- as.numeric(difftime(df$timestamp[current_idx],
+                                       df$timestamp[current_start],
+                                       units = "hours"))
+      
+      if (time_diff >= min_hours) {
+        results[[length(results) + 1]] <- data.frame(
+          animal_id = df$animal_id[current_start],
+          start_time = df$timestamp[current_start],
+          end_time = df$timestamp[current_idx],
+          stringsAsFactors = FALSE
+        )
+      }
+    }
+    
+    # Move to next potential period....
+    current_start <- current_idx + 1
+    
+    # Add safety check to prevent infinite loops....
+    if (current_start >= nrow(df) || current_idx >= nrow(df)) {
+      break
+    }
+  }
+  
+  # Combine all results....
+  if (length(results) > 0) {
+    return(do.call(rbind, results))
+  } else {
+    return(NULL)
+  }
+}
+
 # Wrapper to find stops for all tracks in a move2 object and recombine output
 find_periods_move2 <- function(data, 
                                start_idx, 

@@ -133,7 +133,7 @@ pal <- stopover_pal()
 # ------------------------------------------------------------------------------
 
 ui <- fluidPage(
-  ui2(data = dataLeaflet, min_hours = min_hours, proximity = proximity, step = 86400)
+  seg_ui(data = dataLeaflet, min_hours = min_hours, proximity = proximity, step = 86400)
 )
 
 server <- function(input, output, session) {
