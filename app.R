@@ -17,7 +17,7 @@ study_name <- "my_test_study"
 data <- readRDS("~/Documents/projects/track-segmentation/data/raw/input1_move2loc_LatLon.rds")
 
 # Can still generalize to move2 more, right now this still hard codes various columns.
-data <- move2_to_seg(data) |> mutate(species = "misc") # species is placeholder for now
+data <- move2_to_seg(data)
 
 check_data_frame(data)
 

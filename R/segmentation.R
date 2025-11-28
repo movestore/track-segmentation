@@ -11,21 +11,32 @@ move2_to_seg <- function(data) {
   move2::mt_track_id(data) <- "animal_id"
   move2::mt_time(data) <- "timestamp"
   
+  # If the data contains ARGOS lc records, use those. If not, use NA for ARGOS
+  # records. "G" is always used for non-ARGOS records. 
+  if (has_argos_lc(data)) {
+    data <- data |> 
+      mutate(lc = ifelse(sensor_type_id == 82798, as.character(argos_lc), "G"))
+  } else {
+    data <- data |> 
+      mutate(lc = ifelse(sensor_type_id == 82798, NA, "G"))
+  }
+  
   data <- data |> 
     dplyr::mutate(
       animal_id = as.character(animal_id), # Factor also works, so this may already be enforced by move2
       latitude = coords[, 2],
       longitude = coords[, 1],
-      lc = "G", # Need to deal with this for ARGOS,
       species = "Misc"
     ) |> 
-    dplyr::select(animal_id, timestamp, latitude, longitude, lc) |> 
+    dplyr::select(animal_id, timestamp, latitude, longitude, lc, species) |> 
     dplyr::arrange(move2::mt_track_id(data), move2::mt_time(data)) |> 
-    na.omit()
+    na.omit() |> 
+    tibble::as_tibble()
   
-  data <- data |> 
-    dplyr::group_by(animal_id) |> 
-    dplyr::filter(dplyr::n() >= 2)
+  data <- data |>
+    dplyr::group_by(animal_id) |>
+    dplyr::filter(dplyr::n() >= 2) |> 
+    dplyr::ungroup()
   
   data
 }
@@ -416,4 +427,8 @@ key_recode <- function(x, key, replace = NA) {
   y <- unname(key[as.character(x)])
   y[is.na(y)] <- replace
   y
+}
+
+has_argos_lc <- function(data) {
+  "argos_lc" %in% colnames(data)
 }
