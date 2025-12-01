@@ -1,8 +1,8 @@
 
 prep_stops_output <- function(data) {
   data |> 
-    subset(stopover == 1) |>
-    rename(latitude = stopover_lat, longitude = stopover_lon) |>
+    dplyr::filter(stopover == 1) |>
+    dplyr::rename(latitude = stopover_lat, longitude = stopover_lon) |>
     dplyr::mutate(locType = "Stopover") |>
     dplyr::select(
       animal_id,

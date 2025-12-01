@@ -31,18 +31,35 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-  stop_data <- eventReactive(input$recalc, {
+  find_stops <- eventReactive(input$recalc, {
+    stops <- id_stops(data, input$min_hours, input$proximity)
+    
+    list(
+      result = stops,
+      min_hours = isolate(input$min_hours),
+      proximity = isolate(input$proximity)
+    )
+  })
+  
+  find_metastops <- reactive({
+    stops <- find_stops()
+    req(stops)
+    
+    id_metastops(stops$result, stops$min_hours, stops$proximity)
+  })
+  
+  prep_map_data <- reactive({
+    data_for_leaflet(find_metastops())
+  })
+  
+  map_data <- eventReactive(input$recalc, {
     shinybusy::show_modal_spinner("radar")
     
-    stops <- calculate_stops(
-      data, 
-      min_hours = input$min_hours, 
-      proximity = input$proximity
-    )
+    to_map <- prep_map_data()
     
     shinybusy::remove_modal_spinner()
     
-    stops
+    to_map
   })
   
   # Create the initial base map...
@@ -54,12 +71,20 @@ server <- function(input, output, session) {
   observe({
     req(input$timeRange)
     
-    res <- stop_data()
+    res <- map_data()
     req(res)
     
     leafletProxy("map") |>
       clearGroup(group = unique(res$animal_id)) |>
       add_tracking_data(res, input$timeRange)
+  })
+  
+  output$stop_data <- DT::renderDataTable({
+    prep_stops_output(find_stops()$result)
+  })
+  
+  output$metastop_data <- DT::renderDataTable({
+    prep_metastops_output(find_metastops())
   })
 }
 

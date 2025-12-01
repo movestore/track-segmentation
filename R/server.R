@@ -1,4 +1,11 @@
 calculate_stops <- function(data, min_hours, proximity) {
+  tier5 <- id_stops(data, min_hours, proximity)
+  ready4 <- id_metastops(tier5, min_hours, proximity)
+  data_for_leaflet(ready4)
+}
+
+# data -> raw seg data
+id_stops <- function(data, min_hours, proximity) {
   data2 <- find_periods_move2(
     data,
     start_idx = 1,
@@ -53,13 +60,12 @@ calculate_stops <- function(data, min_hours, proximity) {
                gis_lon
              ))
   
-  # For output ---------
-  # 
-  # stops_output <- prep_stops_output(tier5)
-  # 
-  # --------------------
-  
-  meta <- stops_to_metastops(tier5)
+  tier5
+}
+
+# data -> "tier5"
+id_metastops <- function(data, min_hours, proximity) {
+  meta <- stops_to_metastops(data)
   
   meta2 <- find_periods_move2(
     meta, 
@@ -71,41 +77,13 @@ calculate_stops <- function(data, min_hours, proximity) {
   
   tier4meta <- get_metastop_loc(meta2)
   
-  ready <- tier5 |>
+  ready <- data |>
     # TODO: Do we really need to rejoin all of these things? Can't we just add this as a layer in the output map?
     left_join(tier4meta, join_by(animal_id, timestamp >= metastart_time,timestamp <= metaend_time)) |>
     mutate(metastop = replace_na(metastop, 0))
   
-  ready4 <- tidy_metastop_data(ready)
-  ready4 <- ready4 |> mutate(locType = stopover_to_label(stopover))
+  ready4 <- tidy_metastop_data(ready) |> 
+    mutate(locType = stopover_to_label(stopover))
   
-  # For output ----------
-  # 
-  # metastop_output <- prep_metastops_output(ready4)
-  # location_output <- prep_location_output(ready4, metastop_output)
-  # 
-  # ---------------------
-  
-  # Write ---------------
-  # 
-  # # TODO This could be a separate tab panel in the app and there could
-  # # be a button to export? Not sure how app triggered export works in MoveApps Shiny
-  # # exactly
-  # write_results(
-  #   location_output, 
-  #   stops_output, 
-  #   metastop_output, 
-  #   proximity = proximity, 
-  #   min_hours = min_hours, 
-  #   study_name = study_name
-  # )
-  # 
-  # ---------------------
-  
-  # First update the data preparation....
-  dataLeaflet <- data_for_leaflet(ready4)
-  # lc_colors <- lc_colors()
-  # pal <- stopover_pal()
-  
-  dataLeaflet
+  ready4
 }

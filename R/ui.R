@@ -43,8 +43,21 @@ segmentation_panel <- function(proximity, min_hours) {
 
 seg_ui <- function(data, min_hours, proximity, step) {
   tagList(
-    time_range_slider(data, step),
-    segmentation_panel(proximity = proximity, min_hours = min_hours),
-    leafletOutput("map", height = "calc(100vh - 130px)")
+    tabsetPanel(
+      tabPanel(
+        "Map",
+        time_range_slider(data, step),    
+        segmentation_panel(proximity = proximity, min_hours = min_hours),
+        leafletOutput("map", height = "calc(100vh - 130px)")
+      ),
+      tabPanel(
+        "Data",
+        h3("Stops"),
+        DT::dataTableOutput("stop_data"),
+        hr(),
+        h3("Metastops"),
+        DT::dataTableOutput("metastop_data")
+      )
+    )
   )
 }
