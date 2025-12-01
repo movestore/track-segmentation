@@ -32,7 +32,17 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   stop_data <- eventReactive(input$recalc, {
-    calculate_stops(data, min_hours = input$min_hours, proximity = input$proximity)
+    shinybusy::show_modal_spinner("radar")
+    
+    stops <- calculate_stops(
+      data, 
+      min_hours = input$min_hours, 
+      proximity = input$proximity
+    )
+    
+    shinybusy::remove_modal_spinner()
+    
+    stops
   })
   
   # Create the initial base map...
@@ -43,9 +53,13 @@ server <- function(input, output, session) {
   # Update tracking data when time range changes...
   observe({
     req(input$timeRange)
+    
+    res <- stop_data()
+    req(res)
+    
     leafletProxy("map") %>%
-      clearGroup(group = unique(stop_data()$animal_id)) %>%
-      add_tracking_data(stop_data(), input$timeRange) 
+      clearGroup(group = unique(res$animal_id)) %>%
+      add_tracking_data(res, input$timeRange)
   })
 }
 
