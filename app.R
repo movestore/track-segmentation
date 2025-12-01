@@ -31,8 +31,13 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
+  has_stops <- reactiveVal(FALSE)
+  has_metastops <- reactiveVal(FALSE)
+  
   find_stops <- eventReactive(input$recalc, {
     stops <- id_stops(data, input$min_hours, input$proximity)
+    
+    has_stops(TRUE)
     
     list(
       result = stops,
@@ -45,7 +50,11 @@ server <- function(input, output, session) {
     stops <- find_stops()
     req(stops)
     
-    id_metastops(stops$result, stops$min_hours, stops$proximity)
+    metastops <- id_metastops(stops$result, stops$min_hours, stops$proximity)
+    
+    has_metastops(TRUE)
+    
+    metastops
   })
   
   prep_map_data <- reactive({
@@ -77,6 +86,38 @@ server <- function(input, output, session) {
     leafletProxy("map") |>
       clearGroup(group = unique(res$animal_id)) |>
       add_tracking_data(res, input$timeRange)
+  })
+  
+  output$data_contents <- renderUI({
+    tagList(
+      h3("Stops"),
+      DT::dataTableOutput("stop_data"),
+      hr(),
+      h3("Metastops"),
+      DT::dataTableOutput("metastop_data")
+    )
+  })
+  
+  output$data_overlay <- renderUI({
+    if (!has_stops() || !has_metastops()) {
+      div(
+        style = "
+        position: absolute;
+        top: 0; left:0; right:0; bottom:0;
+        background: rgba(255,255,255,0.8);
+        z-index: 10;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #666;
+        font-size: 1.2em;
+        text-align: center;
+        padding: 30px;
+        height: 100%;
+      ",
+        "Run the analysis to view data in this tab."
+      )
+    }
   })
   
   output$stop_data <- DT::renderDataTable({

@@ -52,11 +52,12 @@ seg_ui <- function(data, min_hours, proximity, step) {
       ),
       tabPanel(
         "Data",
-        h3("Stops"),
-        DT::dataTableOutput("stop_data"),
-        hr(),
-        h3("Metastops"),
-        DT::dataTableOutput("metastop_data")
+        div(
+          id = "data-wrapper",
+          style = "position:relative; min-height:300px;",
+          uiOutput("data_contents"),
+          uiOutput("data_overlay")
+        )
       )
     )
   )
