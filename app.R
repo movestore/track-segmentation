@@ -57,8 +57,8 @@ server <- function(input, output, session) {
     res <- stop_data()
     req(res)
     
-    leafletProxy("map") %>%
-      clearGroup(group = unique(res$animal_id)) %>%
+    leafletProxy("map") |>
+      clearGroup(group = unique(res$animal_id)) |>
       add_tracking_data(res, input$timeRange)
   })
 }

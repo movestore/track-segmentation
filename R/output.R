@@ -1,9 +1,9 @@
 
 prep_stops_output <- function(data) {
   data |> 
-    subset(stopover == 1) %>%
-    rename(latitude = stopover_lat, longitude = stopover_lon) %>%
-    dplyr::mutate(locType = "Stopover") %>%
+    subset(stopover == 1) |>
+    rename(latitude = stopover_lat, longitude = stopover_lon) |>
+    dplyr::mutate(locType = "Stopover") |>
     dplyr::select(
       animal_id,
       species,
@@ -15,14 +15,14 @@ prep_stops_output <- function(data) {
       locType,
       n_locs,
       stop_id
-    ) %>%
+    ) |>
     na.omit()
 }
 
 # ready4 input
 prep_metastops_output <- function(data) {
   data |> 
-    filter(stopover == 13) %>%
+    filter(stopover == 13) |>
     select(
       animal_id,
       species,

@@ -7,15 +7,15 @@ calculate_stops <- function(data, min_hours, proximity) {
   )
   
   # isolote and annotate raw locations that were not stopped....
-  transit_locs <- data2 %>%
-    subset(is.na(start_time)) %>%
-    mutate(stopover = 0) %>%
-    mutate(gis_lat = latitude, gis_lon = longitude) %>%
+  transit_locs <- data2 |>
+    subset(is.na(start_time)) |>
+    mutate(stopover = 0) |>
+    mutate(gis_lat = latitude, gis_lon = longitude) |>
     mutate(original_lat = latitude, original_lon = longitude)
   
   # isolate and annotate the raw locations that were stopped
-  tier1 <- data2 %>%
-    subset(!is.na(start_time)) %>%
+  tier1 <- data2 |>
+    subset(!is.na(start_time)) |>
     mutate(
       original_lat = latitude, 
       original_lon = longitude,
@@ -31,9 +31,9 @@ calculate_stops <- function(data, min_hours, proximity) {
            original_lat = NA, original_lon = NA)
   
   # prep the locations associated with the stopovers...
-  tier1 <- tier1 %>%
+  tier1 <- tier1 |>
     mutate(gis_lat = original_lat, 
-           gis_lon = original_lon) %>%
+           gis_lon = original_lon) |>
     dplyr::select(-latitude, -longitude)
   
   # combine with all of the data records: 
@@ -44,9 +44,9 @@ calculate_stops <- function(data, min_hours, proximity) {
   
   Dateline <- FALSE
   
-  tier5 <- bind_rows(transit_locs,tier1,tier4) %>%
-    arrange(animal_id, timestamp) %>%
-    dplyr::select(-w, -latitude, -longitude) %>%
+  tier5 <- bind_rows(transit_locs,tier1,tier4) |>
+    arrange(animal_id, timestamp) |>
+    dplyr::select(-w, -latitude, -longitude) |>
     mutate(gis_elon = 
              ifelse(
                gis_lon < 0 & Dateline, gis_lon + 360, 
@@ -71,9 +71,9 @@ calculate_stops <- function(data, min_hours, proximity) {
   
   tier4meta <- get_metastop_loc(meta2)
   
-  ready <- tier5 %>%
+  ready <- tier5 |>
     # TODO: Do we really need to rejoin all of these things? Can't we just add this as a layer in the output map?
-    left_join(tier4meta, join_by(animal_id, timestamp >= metastart_time,timestamp <= metaend_time)) %>%
+    left_join(tier4meta, join_by(animal_id, timestamp >= metastart_time,timestamp <= metaend_time)) |>
     mutate(metastop = replace_na(metastop, 0))
   
   ready4 <- tidy_metastop_data(ready)

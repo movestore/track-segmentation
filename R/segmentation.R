@@ -205,17 +205,17 @@ calculate_weighted_loc <- function(data) {
   
   if ((lon_range[2] - lon_range[1]) > 180) {
     # If longitude range is > 180, assume crossing the 180 dateline...
-    data <- data %>%
+    data <- data |>
       mutate(elon = ifelse(longitude < 0, longitude + 360, longitude))
   } else {
     # Otherwise, use the standard [-180, 180] range for Greenwich crossing
-    data <- data %>%
+    data <- data |>
       mutate(elon = ifelse(longitude > 180, longitude - 360, longitude))
   }
   
-  data <- data %>%
+  data <- data |>
     mutate(elon_rad = elon * pi / 180) |>
-    group_by(stop_id) %>%
+    group_by(stop_id) |>
     summarize(
       weighted_sin = sum(w * sin(elon_rad)) / sum(w),
       weighted_cos = sum(w * cos(elon_rad)) / sum(w),
@@ -252,8 +252,8 @@ stops_to_metastops <- function(data) {
                   species,
                   n_locs) |> 
     na.omit() |> 
-    arrange(animal_id, timestamp) %>%
-    group_by(animal_id) %>%
+    arrange(animal_id, timestamp) |>
+    group_by(animal_id) |>
     filter(n() >= 2)
 }
 
@@ -267,8 +267,8 @@ get_metastop_loc <- function(data) {
     mutate(n_meta = dplyr::n() / 2) |> 
     filter(n_locs == max(n_locs)) |> # TODO confirm this is fastre than arrange() and filter by row number
     filter(timestamp == min(timestamp)) |> 
-    mutate(gis_lat = latitude, gis_lon = longitude) %>%
-    mutate(meta_lat = latitude, meta_lon = longitude) %>%
+    mutate(gis_lat = latitude, gis_lon = longitude) |>
+    mutate(meta_lat = latitude, meta_lon = longitude) |>
     dplyr::select(metastop_id,meta_lat,meta_lon,n_meta,gis_lat,gis_lon)
   
   stops <- dplyr::left_join(
@@ -353,7 +353,7 @@ data_for_leaflet <- function(data) {
       n_stops = n_locs,
       myRadius = if_else(stopover == 13, ((n_stops / 10 * myRadius) + myRadius), myRadius)
     ) |> 
-    dplyr::select(animal_id, timestamp, latitude, longitude, lc, stop_days, locType, myRadius, stop_id, n_stops, species) %>%
+    dplyr::select(animal_id, timestamp, latitude, longitude, lc, stop_days, locType, myRadius, stop_id, n_stops, species) |>
     ungroup()
   
   # Validate and filter coordinates...
