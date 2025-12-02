@@ -27,7 +27,7 @@ check_data_frame(data)
 # ------------------------------------------------------------------------------
 
 ui <- fluidPage(
-  seg_ui(data = data_raw, min_hours = min_hours, proximity = proximity, step = 86400)
+  seg_ui(data = data_raw, min_hours = 6, proximity = 150, step = 86400)
 )
 
 server <- function(input, output, session) {
