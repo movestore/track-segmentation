@@ -97,20 +97,7 @@ server <- function(input, output, session) {
   output$data_overlay <- renderUI({
     if (!has_stops() || !has_metastops()) {
       div(
-        style = "
-        position: absolute;
-        top: 0; left:0; right:0; bottom:0;
-        background: rgba(255,255,255,0.8);
-        z-index: 10;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        color: #666;
-        font-size: 1.2em;
-        text-align: center;
-        padding: 30px;
-        height: 100%;
-      ",
+        style = overlay_style(),
         "Run the analysis to view data in this tab."
       )
     }
