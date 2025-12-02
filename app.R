@@ -52,10 +52,8 @@ server <- function(input, output, session) {
     )
   })
   
-  find_metastops <- reactive({
+  find_metastops <- eventReactive(find_stops(), {
     stops <- find_stops()
-    req(stops)
-    
     metastops <- id_metastops(stops$result, stops$min_hours, stops$proximity)
     
     has_metastops(TRUE)
