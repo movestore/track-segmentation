@@ -43,10 +43,10 @@ slider_panel_style <- function() {
   "
     top: 164px;
     left: 80px;
-    width:300px;
-    position:absolute;
-    cursor:inherit;
-    z-index: 9999;
+    width: 300px;
+    position: absolute;
+    cursor: inherit;
+    z-index: 450;
     background: rgba(255,255,255,0.9);
     padding: 10px;
     border-radius: 5px;
