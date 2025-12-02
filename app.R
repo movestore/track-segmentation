@@ -33,6 +33,12 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   has_stops <- reactiveVal(FALSE)
   has_metastops <- reactiveVal(FALSE)
+
+  # Ensure busy spinner starts before data prep, since both depend on recalc
+  # button event
+  observeEvent(input$recalc, priority = 100, {
+    shinybusy::show_modal_spinner("radar")
+  })
   
   find_stops <- eventReactive(input$recalc, {
     stops <- id_stops(data, input$min_hours, input$proximity)
@@ -61,16 +67,6 @@ server <- function(input, output, session) {
     data_for_leaflet(find_metastops())
   })
   
-  map_data <- eventReactive(input$recalc, {
-    shinybusy::show_modal_spinner("radar")
-    
-    to_map <- prep_map_data()
-    
-    shinybusy::remove_modal_spinner()
-    
-    to_map
-  })
-  
   # Create the initial base map...
   output$map <- renderLeaflet({
     create_base_map(bbox)
@@ -78,14 +74,16 @@ server <- function(input, output, session) {
   
   # Update tracking data when time range changes...
   observe({
-    req(input$timeRange)
+    res <- prep_map_data()
     
-    res <- map_data()
     req(res)
+    req(input$timeRange)
     
     leafletProxy("map") |>
       clearGroup(group = unique(res$animal_id)) |>
       add_tracking_data(res, input$timeRange)
+    
+    shinybusy::remove_modal_spinner()
   })
   
   output$data_contents <- renderUI({
