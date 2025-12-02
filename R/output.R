@@ -37,7 +37,6 @@ prep_metastops_output <- function(data) {
     )
 }
 
-# data1 = ready4? data2 = prep_metastops_output() output...?
 prep_location_output <- function(data1, data2) {
   temp1 <- data2 |> 
     mutate(metastart_time = start_time, metaend_time  = end_time) |> 
@@ -65,45 +64,75 @@ prep_location_output <- function(data1, data2) {
   newLocData
 }
 
-out_file_name <- function(what, 
-                          proximity, 
-                          min_hours, 
-                          study_name, 
+out_file_name <- function(prefix,
+                          proximity,
+                          min_hours,
                           ext = "csv",
                           version = app_version()) {
   paste0(
-    what, 
+    prefix, 
     "_v", version,
-    "_proxMeters_", proximity,
+    "_proxMeters", proximity,
     "_minHours", min_hours,
-    "_", study_name,
     ".", ext
   )
 }
 
-write_results <- function(transit, stops, metastops, proximity, min_hours, study_name, version = app_version()) {
-  fname_stop <- out_file_name("stopovers", proximity, min_hours, study_name, version = version)
-  fname_meta <- out_file_name("metaStops", proximity, min_hours, study_name, version = version)
-  fname_move <- out_file_name("locationsAnnotated", proximity, min_hours, study_name, version = version)
-  fname_zip  <- out_file_name("track_segmentation", proximity, min_hours, study_name, version = version, ext = "zip")
-  
-  tmp <- tempdir()
-  
-  dir.create(tmp)
-  
-  files <- list(
-    file.path(tmp, fname_stop),
-    file.path(tmp, fname_meta),
-    file.path(tmp, fname_move)
+write_results <- function(stops,
+                          metastops,
+                          proximity,
+                          min_hours,
+                          version = app_version()) {
+  fnames <- lapply(
+    c("stopovers", "metaStops", "locationsAnnotated"),
+    function(x) {
+      out_file_name(x, proximity, min_hours, version = version)
+    }
   )
   
-  write.csv(stops, files[[1]])
-  write.csv(metastops, files[[2]])
-  write.csv(transit, files[[3]])
+  fname_zip  <- out_file_name(
+    "track_segmentation", 
+    proximity, 
+    min_hours, 
+    version = version, 
+    ext = "zip"
+  )
   
-  zip_file <- moveapps::appArtifactPath(fname_zip)
+  tmp <- tempdir()
+  out_dir <- file.path(tmp, "track-segmentation")
   
+  if (dir.exists(out_dir)) {
+    unlink(list.files(out_dir, full.names = TRUE, recursive = TRUE))
+  } else {
+    dir.create(out_dir)
+  }
+  
+  files <- list(
+    file.path(out_dir, fnames[[1]]),
+    file.path(out_dir, fnames[[2]]),
+    file.path(out_dir, fnames[[3]])
+  )
+  
+  stops_to_write <- prep_stops_output(stops)
+  metastops_to_write <- prep_metastops_output(metastops)
+  
+  # `metastops` actually contains all movement locations, it's only the prepped 
+  # metastops output that is filtered. Pass both to prevent recalculation
+  # of `metastops_to_write`, though this is admittedly a strange function
+  # construction.
+  transit_to_write <- prep_location_output(metastops, metastops_to_write)
+  
+  write.csv(stops_to_write, files[[1]], row.names = FALSE)
+  write.csv(metastops_to_write, files[[2]], row.names = FALSE)
+  write.csv(transit_to_write, files[[3]], row.names = FALSE)
+  
+  # TODO: Is `appArtifactPath()` supposed to construct file path itself?
+  # currently just concatenates filename with the artifact path...
+  # This seems to conflict with MoveApps docs example for shiny output files
+  zip_file <- moveapps::appArtifactPath(paste0("/", fname_zip))
   zip::zip(zip_file, files = unlist(files), mode = "cherry-pick")
+  
+  zip_file
 }
 
 app_version <- function() {

@@ -11,7 +11,10 @@ source("R/output.R")
 source("R/map.R")
 source("R/server.R")
 
-study_name <- "my_test_study"
+# This redirects output to tempdir for dev purposes
+# TODO: after adapting to MoveApps framework, output location should be 
+# handled by .env instead
+Sys.setenv("APP_ARTIFACTS_DIR" = tempdir())
 pal <- stopover_pal()
 
 # This will ultimately come from previous MoveApp
@@ -33,7 +36,8 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   has_stops <- reactiveVal(FALSE)
   has_metastops <- reactiveVal(FALSE)
-
+  results_zip <- reactiveVal(NULL)
+  
   # Ensure busy spinner starts before data prep, since both depend on recalc
   # button event
   observeEvent(input$recalc, priority = 100, {
@@ -60,6 +64,27 @@ server <- function(input, output, session) {
     
     metastops
   })
+  
+  observeEvent(find_metastops(), {
+    stops <- find_stops()
+    metastops <- find_metastops()
+    
+    # Remove existing results zip if it exists
+    if (!is.null(results_zip())) {
+      unlink(results_zip())
+      results_zip(NULL)
+    }
+    
+    f_out <- write_results(
+      stops$result,
+      metastops,
+      stops$proximity,
+      stops$min_hours
+    )
+    
+    results_zip(f_out)
+  })
+  
   
   prep_map_data <- reactive({
     data_for_leaflet(find_metastops())
