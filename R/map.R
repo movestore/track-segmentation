@@ -1,4 +1,4 @@
-create_base_map <- function(bbox) {
+create_basemap <- function(bbox) {
   leaflet() |>
     addTiles(group = "OpenStreetMap") |>
     fitBounds(
@@ -9,32 +9,32 @@ create_base_map <- function(bbox) {
     ) |> 
     addProviderTiles("Esri.WorldImagery", group = "Satellite") |>
     addDrawToolbar(
-      editOptions=editToolbarOptions(selectedPathOptions=selectedPathOptions())
+      editOptions = editToolbarOptions(
+        selectedPathOptions = selectedPathOptions()
+      )
     ) |> 
-    addMeasure(primaryLengthUnit="kilometers", secondaryLengthUnit="kilometers") |>
-    addScaleBar(position = "bottomleft",  # Position of the scale bar...
-                options = scaleBarOptions(metric = TRUE,  # Show metric units (meters/kilometers)...
-                                          imperial = FALSE,  # Do not show imperial units (feet/miles)...
-                                          maxWidth = 400)) |>  # Max width of the scale bar...
+    addMeasure(
+      primaryLengthUnit = "kilometers", 
+      secondaryLengthUnit = "kilometers"
+    ) |>
+    addScaleBar(
+      position = "bottomleft",  # Position of the scale bar...
+      options = scaleBarOptions(
+        metric = TRUE,
+        imperial = FALSE, 
+        maxWidth = 400
+      )
+    ) |>
     addLayersControl(
       baseGroups = c("Satellite", "OpenStreetMap"),
       options = layersControlOptions(collapsed = FALSE)
     )
 }
 
-add_tracking_data <- function(map, data, time_range) {
-  # Filter data based on time range....
-  filtered_data <- data |>
-    filter(timestamp >= time_range[1] & timestamp <= time_range[2])
+add_tracking_lines <- function(map, data) {
+  animals <- unique(data$animal_id)
   
-  # Create unique colors for each animal, NOT USED....
-  animals <- unique(filtered_data$animal_id)
-  animal_colors <- colorFactor(
-    palette = "Set3", 
-    domain = animals
-  )
-  
-  # Remove existing overlay groups and add new ones....
+  # Add animal IDs as overlay groups
   map <- map |>
     clearGroup(group = animals) |>
     addLayersControl(
@@ -44,12 +44,9 @@ add_tracking_data <- function(map, data, time_range) {
     )
   
   for (animal in animals) {
-    animal_data <- filtered_data[filtered_data$animal_id == animal,]
-    
-    # Add track line....
     map <- map |>
       addPolylines(
-        data = animal_data,
+        data = data[data$animal_id == animal, ],
         lat = ~latitude,
         lng = ~longitude,
         color = "white",
@@ -58,11 +55,68 @@ add_tracking_data <- function(map, data, time_range) {
         group = animal,
         options = pathOptions(zIndexOffset = 100)
       )
-    
-    # Add points....
-    map <- map |>
+  }
+  
+  map
+}
+
+add_tracking_points <- function(map, data, init = FALSE) {
+  animals <- unique(data$animal_id)
+  
+  # Add animal IDs as overlay groups
+  map <- map |>
+    # clearGroup(group = animals) |>
+    addLayersControl(
+      baseGroups = c("Satellite", "OpenStreetMap"),
+      overlayGroups = animals,
+      options = layersControlOptions(collapsed = FALSE)
+    )
+  
+  if (init) {
+    map <- addLocationMarkers(map, data)
+  } else {
+    map <- addStopMarkers(map, data)
+  }
+  
+  map
+}
+
+addLocationMarkers <- function(map, data) {
+  for (animal in unique(data$animal_id)) {
+    map <- map |> 
       addCircleMarkers(
-        data = animal_data,
+        data = data[data$animal_id == animal, ],
+        lng = ~longitude,
+        lat = ~latitude,
+        color = "white",
+        fillColor = "white",
+        radius = 3,
+        fillOpacity = 0.8,
+        stroke = FALSE,
+        popup = ~paste(
+          "Animal:", animal_id, "<br>",
+          "Species:", species, "<br>",
+          "Time:", timestamp, "<br>",
+          # "Location Type:", locType, "<br>",
+          "Location Class:", lc, "<br>",
+          # "Stop Days:", stop_days, "<br>",
+          # "N stops:", n_stops, "<br>",
+          # "Stop ID:", stop_id, "<br>",
+          "Coordinates:", round(latitude, 4), ",", round(longitude, 4)
+        ),
+        group = animal,
+        options = pathOptions(zIndexOffset = 200)
+      )
+  }
+  
+  map
+}
+
+addStopMarkers <- function(map, data) {
+  for (animal in unique(data$animal_id)) {
+    map <- map |> 
+      addCircleMarkers(
+        data = data[data$animal_id == animal, ],
         lng = ~longitude,
         lat = ~latitude,
         color = ~pal(locType),
@@ -84,6 +138,6 @@ add_tracking_data <- function(map, data, time_range) {
         options = pathOptions(zIndexOffset = 200)
       )
   }
-
+  
   map
 }

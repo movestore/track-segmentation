@@ -37,7 +37,20 @@ server <- function(input, output, session) {
   has_stops <- reactiveVal(FALSE)
   has_metastops <- reactiveVal(FALSE)
   results_zip <- reactiveVal(NULL)
+  cur_data <- reactiveVal(list(type = "init", data = data))
+  map_trigger <- reactiveVal(0)
   button_invalid <- reactiveVal(TRUE)
+  
+  filt_data <- reactive({
+    d <- cur_data()$data
+    req(d)
+    
+    dplyr::filter(
+      d, 
+      timestamp >= input$timeRange[1], 
+      timestamp <= input$timeRange[2]
+    )
+  })
   
   # Ensure busy spinner starts before data prep, since both depend on recalc
   # button event
@@ -76,6 +89,9 @@ server <- function(input, output, session) {
     
     has_metastops(TRUE)
     button_invalid(FALSE)
+    cur_data(list(type = "processed", data = data_for_leaflet(metastops)))
+    
+    map_trigger(map_trigger() + 1)
     
     metastops
   })
@@ -100,26 +116,39 @@ server <- function(input, output, session) {
     results_zip(f_out)
   })
   
-  
-  prep_map_data <- reactive({
-    data_for_leaflet(find_metastops())
-  })
-  
   # Create the initial base map...
   output$map <- renderLeaflet({
-    create_base_map(bbox)
+    create_basemap(bbox)
   })
   
   # Update tracking data when time range changes...
   observe({
-    res <- prep_map_data()
+    # Dependency on map render counter ensures that we always re-render
+    # map on input$recalc trigger, even if inputs don't change.
+    # (We don't want to explicitly trigger this on input$recalc because
+    # we need more control over temporal ordering of processing steps)
+    map_trigger()
     
-    req(res)
-    req(input$timeRange)
+    data_status <- cur_data()$type
+    map_data <- filt_data()
     
-    leafletProxy("map") |>
-      clearGroup(group = unique(res$animal_id)) |>
-      add_tracking_data(res, input$timeRange)
+    req(map_data)
+    req(data_status)
+    
+    map <- leafletProxy("map") |> 
+      clearGroup(group = unique(map_data$animal_id)) |>
+      add_tracking_lines(data = map_data)
+    
+    # Initial data do not have all necessary attributes for coloring in the same
+    # way as processed data. After the first time stops are calculated, we can
+    # render with the stop/metastop styling
+    if (data_status == "init") {
+      map |>
+        add_tracking_points(data = map_data, init = TRUE)
+    } else {
+      map |>
+        add_tracking_points(data = map_data)
+    }
     
     shinybusy::remove_modal_spinner()
   })
