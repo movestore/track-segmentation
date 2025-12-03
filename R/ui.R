@@ -70,6 +70,7 @@ segmentation_panel <- function(proximity, min_hours) {
 
 seg_ui <- function(data, min_hours, proximity, step) {
   tagList(
+    shinyjs::useShinyjs(),
     tabsetPanel(
       tabPanel(
         "Map",

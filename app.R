@@ -37,11 +37,25 @@ server <- function(input, output, session) {
   has_stops <- reactiveVal(FALSE)
   has_metastops <- reactiveVal(FALSE)
   results_zip <- reactiveVal(NULL)
+  button_invalid <- reactiveVal(TRUE)
   
   # Ensure busy spinner starts before data prep, since both depend on recalc
   # button event
   observeEvent(input$recalc, priority = 100, {
     shinybusy::show_modal_spinner("radar")
+  })
+  
+  # Track sliders, change button CSS to indicate when segmentation needs rerun
+  observeEvent(list(input$min_hours, input$proximity), {
+    button_invalid(TRUE)
+  })
+  
+  observe({
+    if (button_invalid()) {
+      shinyjs::enable("recalc")
+    } else {
+      shinyjs::disable("recalc")
+    }
   })
   
   find_stops <- eventReactive(input$recalc, {
@@ -61,6 +75,7 @@ server <- function(input, output, session) {
     metastops <- id_metastops(stops$result, stops$min_hours, stops$proximity)
     
     has_metastops(TRUE)
+    button_invalid(FALSE)
     
     metastops
   })
