@@ -15,7 +15,6 @@ source("R/server.R")
 # TODO: after adapting to MoveApps framework, output location should be 
 # handled by .env instead
 Sys.setenv("APP_ARTIFACTS_DIR" = tempdir())
-pal <- stopover_pal()
 
 # This will ultimately come from previous MoveApp
 data_raw <- readRDS("~/Documents/projects/track-segmentation/data/raw/input2_move2loc_LatLon.rds")
@@ -37,12 +36,12 @@ server <- function(input, output, session) {
   has_stops <- reactiveVal(FALSE)
   has_metastops <- reactiveVal(FALSE)
   results_zip <- reactiveVal(NULL)
-  cur_data <- reactiveVal(list(type = "init", data = data))
+  map_data <- reactiveVal(list(type = "init", data = data))
   map_trigger <- reactiveVal(0)
   button_invalid <- reactiveVal(TRUE)
   
   filt_data <- reactive({
-    d <- cur_data()$data
+    d <- map_data()$data
     req(d)
     
     dplyr::filter(
@@ -89,7 +88,7 @@ server <- function(input, output, session) {
     
     has_metastops(TRUE)
     button_invalid(FALSE)
-    cur_data(list(type = "processed", data = data_for_leaflet(metastops)))
+    map_data(list(type = "processed", data = data_for_leaflet(metastops)))
     
     map_trigger(map_trigger() + 1)
     
@@ -129,25 +128,26 @@ server <- function(input, output, session) {
     # we need more control over temporal ordering of processing steps)
     map_trigger()
     
-    data_status <- cur_data()$type
-    map_data <- filt_data()
+    data_status <- map_data()$type
+    filt_map_data <- filt_data()
     
-    req(map_data)
+    req(filt_map_data)
     req(data_status)
     
     map <- leafletProxy("map") |> 
-      clearGroup(group = unique(map_data$animal_id)) |>
-      add_tracking_lines(data = map_data)
+      clearGroup(group = unique(filt_map_data$animal_id)) |>
+      addTrackLayersControl(filt_map_data) |> 
+      addTrackLines(filt_map_data)
     
     # Initial data do not have all necessary attributes for coloring in the same
     # way as processed data. After the first time stops are calculated, we can
     # render with the stop/metastop styling
     if (data_status == "init") {
-      map |>
-        add_tracking_points(data = map_data, init = TRUE)
+      map <- map |>
+        addTrackLocationMarkers(filt_map_data)
     } else {
-      map |>
-        add_tracking_points(data = map_data)
+      map <- map |>
+        addTrackStopMarkers(filt_map_data)
     }
     
     shinybusy::remove_modal_spinner()
@@ -166,7 +166,7 @@ server <- function(input, output, session) {
   output$data_overlay <- renderUI({
     if (!has_stops() || !has_metastops()) {
       div(
-        style = overlay_style(),
+        class = "overlay",
         "Run the analysis to view data in this tab."
       )
     }

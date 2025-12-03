@@ -368,15 +368,6 @@ data_for_leaflet <- function(data) {
   data
 }
 
-stopover_pal <- function(colors = c("red", "blue", "cyan", "yellow")) {
-  leaflet::colorFactor(colors, unique(stopover_labels()))
-}
-
-lc_colors <- function(colors = c("red", "blue", "cyan", "yellow")) {
-  # leaflet maps colors by sorted position, not index
-  setNames(colors, sort(unique(stopover_labels())))
-}
-
 lc_recode <- function(x) {
   key_recode(x, lc_weights(), 1)
 }

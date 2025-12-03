@@ -28,10 +28,15 @@ create_basemap <- function(bbox) {
     addLayersControl(
       baseGroups = c("Satellite", "OpenStreetMap"),
       options = layersControlOptions(collapsed = FALSE)
+    ) |> 
+    addTrackLegend(
+      colors = legend_colors(),
+      labels = legend_labels(),
+      title = "Location Type"
     )
 }
 
-add_tracking_lines <- function(map, data) {
+addTrackLines <- function(map, data) {
   animals <- unique(data$animal_id)
   
   # Add animal IDs as overlay groups
@@ -60,48 +65,24 @@ add_tracking_lines <- function(map, data) {
   map
 }
 
-add_tracking_points <- function(map, data, init = FALSE) {
-  animals <- unique(data$animal_id)
-  
-  # Add animal IDs as overlay groups
-  map <- map |>
-    # clearGroup(group = animals) |>
-    addLayersControl(
-      baseGroups = c("Satellite", "OpenStreetMap"),
-      overlayGroups = animals,
-      options = layersControlOptions(collapsed = FALSE)
-    )
-  
-  if (init) {
-    map <- addLocationMarkers(map, data)
-  } else {
-    map <- addStopMarkers(map, data)
-  }
-  
-  map
-}
-
-addLocationMarkers <- function(map, data) {
+addTrackLocationMarkers <- function(map, data) {
   for (animal in unique(data$animal_id)) {
     map <- map |> 
       addCircleMarkers(
         data = data[data$animal_id == animal, ],
         lng = ~longitude,
         lat = ~latitude,
-        color = "white",
-        fillColor = "white",
+        fillColor = unclassified_color(),
         radius = 3,
-        fillOpacity = 0.8,
+        fillOpacity = 0.5,
         stroke = FALSE,
+        # weight = 2,
         popup = ~paste(
           "Animal:", animal_id, "<br>",
           "Species:", species, "<br>",
           "Time:", timestamp, "<br>",
-          # "Location Type:", locType, "<br>",
+          "Location Type: Not yet classified <br>",
           "Location Class:", lc, "<br>",
-          # "Stop Days:", stop_days, "<br>",
-          # "N stops:", n_stops, "<br>",
-          # "Stop ID:", stop_id, "<br>",
           "Coordinates:", round(latitude, 4), ",", round(longitude, 4)
         ),
         group = animal,
@@ -112,7 +93,9 @@ addLocationMarkers <- function(map, data) {
   map
 }
 
-addStopMarkers <- function(map, data) {
+addTrackStopMarkers <- function(map, data) {
+  pal <- stopover_pal()
+  
   for (animal in unique(data$animal_id)) {
     map <- map |> 
       addCircleMarkers(
@@ -140,4 +123,77 @@ addStopMarkers <- function(map, data) {
   }
   
   map
+}
+
+addTrackLayersControl <- function(map, data) {
+  animals <- unique(data$animal_id)
+  
+  # Add animal IDs as overlay groups
+  map <- map |>
+    # clearGroup(group = animals) |>
+    addLayersControl(
+      baseGroups = c("Satellite", "OpenStreetMap"),
+      overlayGroups = animals,
+      options = layersControlOptions(collapsed = FALSE)
+    )
+  
+  map
+}
+
+addTrackLegend <- function(map, colors, labels, title = "", ...) {
+  map |> 
+    addControl(
+      html = track_legend(colors, labels, title = title),
+      position = "bottomright",
+      ...
+    )
+}
+
+track_legend <- function(colors, labels, title = "") {
+  stopifnot(length(colors) == length(labels))
+  
+  html <- paste0(
+    "<div class='legend-title'>", title, "</div><div class='custom-legend'>"
+  )
+  
+  for (i in seq_along(colors)) {
+    html <- paste0(html, legend_item(colors[i], labels[i]))
+  }
+  
+  html <- paste0(
+    html, 
+    "<hr>", 
+    legend_item(unclassified_color(), "Not yet classified", class = "unclass-pt")
+  )
+  
+  HTML(html)
+}
+
+legend_item <- function(color, label, class = NULL) {
+  classes <- paste0(c("legend-circle", class), collapse = " ")
+  
+  paste0(
+    "<div class='legend-item'><span class='", classes, "' style='background:", 
+    color, ";'></span>", label, "</div>"
+  )
+}
+
+stopover_pal <- function(colors = lc_colors()) {
+  leaflet::colorFactor(colors, unique(stopover_labels()))
+}
+
+legend_colors <- function() {
+  lc_colors()
+}
+
+legend_labels <- function() {
+  sort(unique(stopover_labels()))
+}
+
+lc_colors <- function() {
+  c("red", "blue", "cyan", "yellow")
+}
+
+unclassified_color <- function() {
+  "lightgray"
 }
