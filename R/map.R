@@ -1,5 +1,5 @@
 create_basemap <- function(bbox) {
-  leaflet() |>
+  leaflet(options = leafletOptions(preferCanvas = TRUE)) |>
     addTiles(group = "OpenStreetMap") |>
     fitBounds(
       lng1 = bbox[["xmin"]],
