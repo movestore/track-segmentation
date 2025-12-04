@@ -1,5 +1,9 @@
 
 prep_stops_output <- function(data) {
+  if (nrow(data) == 0) {
+    return(tibble::tibble())
+  }
+  
   data |> 
     dplyr::filter(stopover == 1) |>
     dplyr::rename(latitude = stopover_lat, longitude = stopover_lon) |>
@@ -21,6 +25,10 @@ prep_stops_output <- function(data) {
 
 # ready4 input
 prep_metastops_output <- function(data) {
+  if (nrow(data) == 0) {
+    return(tibble::tibble())
+  }
+  
   data |> 
     filter(stopover == 13) |>
     select(
@@ -38,8 +46,12 @@ prep_metastops_output <- function(data) {
 }
 
 prep_location_output <- function(data1, data2) {
+  if (nrow(data1) == 0 || nrow(data2) == 0) {
+    return(tibble::tibble())
+  }
+  
   temp1 <- data2 |> 
-    mutate(metastart_time = start_time, metaend_time  = end_time) |> 
+    mutate(metastart_time = start_time, metaend_time = end_time) |> 
     select(animal_id, n_stops, metastart_time, metaend_time, meta_stop_id)
   
   newLocData <- data1 |> 

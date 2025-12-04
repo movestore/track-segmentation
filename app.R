@@ -71,7 +71,14 @@ server <- function(input, output, session) {
   })
   
   find_stops <- eventReactive(input$recalc, {
-    stops <- id_stops(data, input$min_hours, input$proximity)
+    stops <- tryCatch(
+      suppressWarnings(
+        id_stops(data, input$min_hours, input$proximity)
+      ),
+      error = function(cnd) {
+        mutate_empty_stops(data)
+      }
+    )
     
     has_stops(TRUE)
     
@@ -84,7 +91,15 @@ server <- function(input, output, session) {
   
   find_metastops <- eventReactive(find_stops(), {
     stops <- find_stops()
-    metastops <- id_metastops(stops$result, stops$min_hours, stops$proximity)
+    
+    metastops <- tryCatch(
+      suppressWarnings(
+        id_metastops(stops$result, stops$min_hours, stops$proximity)
+      ),
+      error = function(cnd) {
+        mutate_empty_metastops(stops$result)
+      }
+    )
     
     has_metastops(TRUE)
     button_invalid(FALSE)

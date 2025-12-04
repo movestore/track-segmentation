@@ -89,3 +89,36 @@ id_metastops <- function(data, min_hours, proximity) {
   
   tidy_metastop_data(ready)
 }
+
+mutate_empty_stops <- function(data) {
+  dateline <- FALSE
+  
+  data |> 
+    mutate(
+      start_time = NA,
+      end_time = NA,
+      stop_id = NA,
+      stop_hours = NA,
+      stop_days = NA,
+      stopover = 0,
+      original_lat = latitude,
+      original_lon = longitude,
+      gis_lat = latitude,
+      gis_lon = longitude,
+      stopover_lat = NA,
+      stopover_lon = NA,
+      n_locs = NA,
+      gis_elon = ifelse(gis_lon < 0 & dateline, gis_lon + 360, gis_lon)
+    ) |> 
+    select(-latitude, -longitude)
+}
+
+mutate_empty_metastops <- function(data) {
+  data |> 
+    mutate(
+      locType = stopover_to_label(stopover)
+    ) |> 
+    select(
+      -c(stop_hours, original_lat, original_lon, stopover_lat, stopover_lon)
+    )
+}
