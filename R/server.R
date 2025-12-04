@@ -1,8 +1,3 @@
-calculate_stops <- function(data, min_hours, proximity) {
-  tier5 <- id_stops(data, min_hours, proximity)
-  ready4 <- id_metastops(tier5, min_hours, proximity)
-  data_for_leaflet(ready4)
-}
 
 # data -> raw seg data
 id_stops <- function(data, min_hours, proximity) {
@@ -15,52 +10,56 @@ id_stops <- function(data, min_hours, proximity) {
   
   # isolote and annotate raw locations that were not stopped....
   transit_locs <- data2 |>
-    subset(is.na(start_time)) |>
-    mutate(stopover = 0) |>
-    mutate(gis_lat = latitude, gis_lon = longitude) |>
-    mutate(original_lat = latitude, original_lon = longitude)
-  
-  # isolate and annotate the raw locations that were stopped
-  tier1 <- data2 |>
-    subset(!is.na(start_time)) |>
-    mutate(
-      original_lat = latitude, 
+    dplyr::filter(is.na(stop_id)) |>
+    dplyr::mutate(
+      stopover = 0,
+      original_lat = latitude, # Still not clear why we need all these different records of lat/lon
       original_lon = longitude,
-      stopover = 2,
-      w = lc_recode(lc)
+      gis_lat = latitude, 
+      gis_lon = longitude
     ) |> 
-    tibble::as_tibble() # Temporary fix to remove move2 class to ensure subsquent code
-  
-  tier4 <- calculate_weighted_loc(tier1) |>
-    dplyr::left_join(tier1, dplyr::join_by(stop_id)) |>
-    dplyr::filter(timestamp == min(timestamp), .by = stop_id) |>
-    mutate(stopover = 1, latitude = NA, longitude = NA, lc = NA,
-           original_lat = NA, original_lon = NA)
-  
-  # prep the locations associated with the stopovers...
-  tier1 <- tier1 |>
-    mutate(gis_lat = original_lat, 
-           gis_lon = original_lon) |>
     dplyr::select(-latitude, -longitude)
   
-  # combine with all of the data records: 
-  # transit_locs = non-stopped locs, 
-  # tier1 = stopped raw locs, and 
-  # tier4 = stopover derived locs...
-  transit_locs <- tibble::as_tibble(transit_locs) # remove move2; temporary
+  # isolate and annotate the raw locations that were stopped
+  stopped_locs <- data2 |>
+    dplyr::filter(!is.na(stop_id)) |>
+    dplyr::mutate(
+      stopover = 2,
+      original_lat = latitude,
+      original_lon = longitude,
+      gis_lat = original_lat,
+      gis_lon = original_lon,
+      w = lc_recode(lc)
+    ) |> 
+    dplyr::select(-latitude, -longitude)
+  
+  weighted_stopped_locs <- stopped_locs |> 
+    dplyr::mutate(
+      stopover_lat = weighted_lat(original_lat, w),
+      stopover_lon = weighted_lon(original_lon, w),
+      n_locs = dplyr::n(),
+      .by = stop_id
+    ) |> 
+    dplyr::filter(timestamp == min(timestamp), .by = stop_id) |>
+    dplyr::mutate(stopover = 1,
+                  lc = NA,
+                  original_lat = NA, 
+                  original_lon = NA,
+                  gis_lat = NA,
+                  gis_lon = NA)
   
   Dateline <- FALSE
   
-  tier5 <- bind_rows(transit_locs,tier1,tier4) |>
+  stops_data <- dplyr::bind_rows(
+    transit_locs, 
+    stopped_locs, 
+    weighted_stopped_locs
+  ) |>
+    dplyr::select(-w) |>
     arrange(animal_id, timestamp) |>
-    dplyr::select(-w, -latitude, -longitude) |>
-    mutate(gis_elon = 
-             ifelse(
-               gis_lon < 0 & Dateline, gis_lon + 360, 
-               gis_lon
-             ))
+    mutate(gis_elon = ifelse(gis_lon < 0 & Dateline, gis_lon + 360, gis_lon))
   
-  tier5
+  stops_data
 }
 
 # data -> "tier5"
@@ -73,17 +72,20 @@ id_metastops <- function(data, min_hours, proximity) {
     min_hours = min_hours, 
     proximity = proximity
   ) |> 
-    rename(metastop_id = stop_id, metastop_hours = stop_hours, metastop_days = stop_days)
+    rename(
+      metastop_id = stop_id, 
+      metastop_hours = stop_hours, 
+      metastop_days = stop_days
+    )
   
-  tier4meta <- get_metastop_loc(meta2)
+  meta3 <- get_metastop_stats(meta2)
   
   ready <- data |>
-    # TODO: Do we really need to rejoin all of these things? Can't we just add this as a layer in the output map?
-    left_join(tier4meta, join_by(animal_id, timestamp >= metastart_time,timestamp <= metaend_time)) |>
+    left_join(
+      meta3, 
+      join_by(animal_id, timestamp >= metastart_time,timestamp <= metaend_time)
+    ) |>
     mutate(metastop = replace_na(metastop, 0))
   
-  ready4 <- tidy_metastop_data(ready) |> 
-    mutate(locType = stopover_to_label(stopover))
-  
-  ready4
+  tidy_metastop_data(ready)
 }
