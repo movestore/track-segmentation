@@ -1,6 +1,6 @@
 
 # data -> raw seg data
-id_stops <- function(data, min_hours, proximity) {
+id_stops <- function(data, min_hours, proximity, dateline = FALSE) {
   data2 <- find_periods_move2(
     data,
     start_idx = 1,
@@ -48,8 +48,6 @@ id_stops <- function(data, min_hours, proximity) {
                   gis_lat = NA,
                   gis_lon = NA)
   
-  Dateline <- FALSE
-  
   stops_data <- dplyr::bind_rows(
     transit_locs, 
     stopped_locs, 
@@ -57,13 +55,13 @@ id_stops <- function(data, min_hours, proximity) {
   ) |>
     dplyr::select(-w) |>
     arrange(animal_id, timestamp) |>
-    mutate(gis_elon = ifelse(gis_lon < 0 & Dateline, gis_lon + 360, gis_lon))
+    mutate(gis_elon = get_elon(gis_lon, dateline))
   
   stops_data
 }
 
 # data -> "tier5"
-id_metastops <- function(data, min_hours, proximity) {
+id_metastops <- function(data, min_hours, proximity, dateline = FALSE) {
   meta <- stops_to_metastops(data)
   
   meta2 <- find_periods_move2(
@@ -87,12 +85,10 @@ id_metastops <- function(data, min_hours, proximity) {
     ) |>
     mutate(metastop = replace_na(metastop, 0))
   
-  tidy_metastop_data(ready)
+  tidy_metastop_data(ready, dateline = dateline)
 }
 
-mutate_empty_stops <- function(data) {
-  dateline <- FALSE
-  
+mutate_empty_stops <- function(data, dateline = FALSE) {
   data |> 
     mutate(
       start_time = NA,
@@ -108,7 +104,7 @@ mutate_empty_stops <- function(data) {
       stopover_lat = NA,
       stopover_lon = NA,
       n_locs = NA,
-      gis_elon = ifelse(gis_lon < 0 & dateline, gis_lon + 360, gis_lon)
+      gis_elon = get_elon(gis_lon, dateline)
     ) |> 
     select(-latitude, -longitude)
 }
@@ -119,6 +115,6 @@ mutate_empty_metastops <- function(data) {
       locType = stopover_to_label(stopover)
     ) |> 
     select(
-      -c(stop_hours, original_lat, original_lon, stopover_lat, stopover_lon)
+      -c(stop_hours, stopover_lat, stopover_lon)
     )
 }

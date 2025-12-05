@@ -36,7 +36,25 @@ create_basemap <- function(bbox) {
     )
 }
 
-addTrackLines <- function(map, data) {
+adj_bbox <- function(bbox, dateline = FALSE) {
+  bbox_crosses_dateline <- crosses_dateline(bbox)
+  
+  if (bbox_crosses_dateline && !dateline) {
+    # If already crosses, but dateline = FALSE, adjust
+    bbox <- c(bbox[3] - 360, bbox[2:1], bbox[4])
+  } else if (!bbox_crosses_dateline && dateline) {
+    # If doesn't cross, but dateline = TRUE, adjust
+    bbox <- c(bbox[3:2], bbox[1] + 360, bbox[4])
+  }
+  
+  bbox
+}
+
+crosses_dateline <- function(bbox) {
+  bbox[[1]] < 180 & bbox[[3]] > 180
+}
+
+addTrackLines <- function(map, data, dateline = FALSE) {
   animals <- unique(data$animal_id)
   
   # Add animal IDs as overlay groups
@@ -53,7 +71,7 @@ addTrackLines <- function(map, data) {
       addPolylines(
         data = data[data$animal_id == animal, ],
         lat = ~latitude,
-        lng = ~longitude,
+        lng = ~get_elon(longitude, dateline = dateline),
         color = "white",
         weight = 1,
         opacity = 0.3,
@@ -65,12 +83,12 @@ addTrackLines <- function(map, data) {
   map
 }
 
-addTrackLocationMarkers <- function(map, data) {
+addTrackLocationMarkers <- function(map, data, dateline = FALSE) {
   for (animal in unique(data$animal_id)) {
     map <- map |> 
       addCircleMarkers(
         data = data[data$animal_id == animal, ],
-        lng = ~longitude,
+        lng = ~get_elon(longitude, dateline = dateline),
         lat = ~latitude,
         fillColor = unclassified_color(),
         radius = 3,
@@ -93,14 +111,14 @@ addTrackLocationMarkers <- function(map, data) {
   map
 }
 
-addTrackStopMarkers <- function(map, data) {
+addTrackStopMarkers <- function(map, data, dateline) {
   pal <- stopover_pal()
   
   for (animal in unique(data$animal_id)) {
     map <- map |> 
       addCircleMarkers(
         data = data[data$animal_id == animal, ],
-        lng = ~longitude,
+        lng = ~get_elon(longitude, dateline = dateline),
         lat = ~latitude,
         color = ~pal(locType),
         radius = ~myRadius,

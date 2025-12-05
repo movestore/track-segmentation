@@ -31,6 +31,7 @@ segmentation_panel <- function(proximity, min_hours) {
       width = 300,
       sliderInput("proximity", "Max distance proximity", min = 0, max = 1000, value = proximity),
       sliderInput("min_hours", "Minimum hours threshold", min = 0, max = 24, value = min_hours),
+      checkboxInput("dateline", "Tracks cross dateline", value = FALSE),
       actionButton("recalc", "Recalculate stops")
     )
   )

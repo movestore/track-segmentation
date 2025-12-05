@@ -347,7 +347,7 @@ tidy_metastop_data <- function(data, dateline = FALSE) {
     arrange(animal_id, timestamp) |> 
     mutate(
       stopover = metastop + stopover,
-      gis_elon = ifelse(gis_lon < 0 & dateline, gis_lon + 360, gis_lon)
+      gis_elon = get_elon(gis_lon, dateline)
     ) |> 
     filter(stopover != 11) |> 
     mutate(
@@ -363,6 +363,8 @@ tidy_metastop_data <- function(data, dateline = FALSE) {
       stop_id, 
       stop_days, 
       stopover, 
+      original_lat,
+      original_lon,
       gis_lat, 
       gis_lon,
       gis_elon,
@@ -377,21 +379,12 @@ tidy_metastop_data <- function(data, dateline = FALSE) {
 }
 
 data_for_leaflet <- function(data) {
-  # Validate required columns exist in the dataset...
-  required_cols <- c("animal_id", "species", "stopover", "gis_lat", "gis_elon", "n_locs", "timestamp")
-  missing_cols <- setdiff(required_cols, colnames(data))
-  if (length(missing_cols) > 0) {
-    stop("Error: Missing required columns in data: ", paste(missing_cols, collapse = ", "))
-  }
-  
-  # message("Number of locations that will be processed: ", nrow(data))
-  
   data <- data |> 
     mutate(
       animal_id = as.factor(animal_id),
       myRadius = stopover_to_radius(stopover),
-      latitude = gis_lat,
-      longitude = gis_elon,
+      latitude = ifelse(is.na(original_lat), gis_lat, original_lat),
+      longitude = ifelse(is.na(original_lon), gis_lon, original_lon),
       n_stops = n_locs,
       myRadius = if_else(stopover == 13, ((n_stops / 10 * myRadius) + myRadius), myRadius)
     ) |> 
@@ -464,4 +457,8 @@ key_recode <- function(x, key, replace = NA) {
 
 has_argos_lc <- function(data) {
   "argos_lc" %in% colnames(data)
+}
+
+get_elon <- function(lon, dateline = FALSE) {
+  ifelse(lon < 0 & dateline, lon + 360, lon)
 }

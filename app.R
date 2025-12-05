@@ -10,21 +10,22 @@ source("R/segmentation.R")
 source("R/output.R")
 source("R/map.R")
 source("R/server.R")
-
+# options(shiny.fullstacktrace = TRUE)
 # This redirects output to tempdir for dev purposes
 # TODO: after adapting to MoveApps framework, output location should be 
 # handled by .env instead
 Sys.setenv("APP_ARTIFACTS_DIR" = tempdir())
 
 # This will ultimately come from previous MoveApp
-data_raw <- readRDS("~/Documents/projects/track-segmentation/data/raw/input2_move2loc_LatLon.rds")
+# data_raw <- readRDS("~/Documents/projects/track-segmentation/data/raw/input2_move2loc_LatLon.rds")
 # data_raw <- move2::movebank_download_study(study_id = 438644854, sensor_type_id = "argos-doppler-shift")
+# data_raw <- move2::movebank_download_study(study_id = 1718959411, sensor_type = "argos")
 
-bbox <- sf::st_bbox(data_raw)
+# bbox <- sf::st_bbox(data_raw)
 
 data <- move2_to_seg(data_raw)
 
-check_data_frame(data)
+# check_data_frame(data)
 
 # ------------------------------------------------------------------------------
 
@@ -37,8 +38,24 @@ server <- function(input, output, session) {
   has_metastops <- reactiveVal(FALSE)
   results_zip <- reactiveVal(NULL)
   map_data <- reactiveVal(list(type = "init", data = data))
+  bbox <- reactiveVal(sf::st_bbox(data_raw))
   map_trigger <- reactiveVal(0)
   button_invalid <- reactiveVal(TRUE)
+  
+  bbox_adj <- reactive({
+    adj_bbox(bbox(), dateline = input$dateline)
+  })
+  
+  # Ideally need to update the algorithm to simply ingest dl adjusted data...
+  # right now the algorithm itself does the adjustment. But presumably
+  # we should be able to update up front and still get the same stop/metastop output
+  # without the algorithm needing to do this adjustment...
+  # dl_adj_data <- reactive({
+  #   d <- map_data()$data
+  #   req(d)
+  # 
+  #   d <- 
+  # })
   
   filt_data <- reactive({
     d <- map_data()$data
@@ -73,10 +90,10 @@ server <- function(input, output, session) {
   find_stops <- eventReactive(input$recalc, {
     stops <- tryCatch(
       suppressWarnings(
-        id_stops(data, input$min_hours, input$proximity)
+        id_stops(data, input$min_hours, input$proximity, dateline = input$dateline)
       ),
       error = function(cnd) {
-        mutate_empty_stops(data)
+        mutate_empty_stops(data, dateline = input$dateline)
       }
     )
     
@@ -94,7 +111,7 @@ server <- function(input, output, session) {
     
     metastops <- tryCatch(
       suppressWarnings(
-        id_metastops(stops$result, stops$min_hours, stops$proximity)
+        id_metastops(stops$result, stops$min_hours, stops$proximity, dateline = input$dateline)
       ),
       error = function(cnd) {
         mutate_empty_metastops(stops$result)
@@ -132,7 +149,21 @@ server <- function(input, output, session) {
   
   # Create the initial base map...
   output$map <- renderLeaflet({
-    create_basemap(bbox)
+    create_basemap(isolate(bbox_adj()))
+  })
+  
+  observe({
+    input$dateline
+    
+    bbox <- req(bbox_adj())
+    
+    leafletProxy("map") |> 
+      fitBounds(
+        lng1 = bbox[["xmin"]],
+        lat1 = bbox[["ymin"]],
+        lng2 = bbox[["xmax"]],
+        lat2 = bbox[["ymax"]]
+      )
   })
   
   # Update tracking data when time range changes...
@@ -152,17 +183,17 @@ server <- function(input, output, session) {
     map <- leafletProxy("map") |> 
       clearGroup(group = unique(filt_map_data$animal_id)) |>
       addTrackLayersControl(filt_map_data) |> 
-      addTrackLines(filt_map_data)
+      addTrackLines(filt_map_data, dateline = input$dateline)
     
     # Initial data do not have all necessary attributes for coloring in the same
     # way as processed data. After the first time stops are calculated, we can
     # render with the stop/metastop styling
     if (data_status == "init") {
       map <- map |>
-        addTrackLocationMarkers(filt_map_data)
+        addTrackLocationMarkers(filt_map_data, dateline = input$dateline)
     } else {
       map <- map |>
-        addTrackStopMarkers(filt_map_data)
+        addTrackStopMarkers(filt_map_data, dateline = input$dateline)
     }
     
     shinybusy::remove_modal_spinner()
