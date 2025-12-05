@@ -174,14 +174,24 @@ server <- function(input, output, session) {
     # we need more control over temporal ordering of processing steps)
     map_trigger()
     
-    data_status <- map_data()$type
+    d <- map_data()
+    
     filt_map_data <- filt_data()
-    
+
     req(filt_map_data)
-    req(data_status)
+    req(d)
     
+    data_status <- d$type
+    full_data <- d$data
+    
+    # Clear existing animals using non-filtered data. Filtered data will no
+    # longer contain these animal IDs and they will stick to the map instead of
+    # disappearing
     map <- leafletProxy("map") |> 
-      clearGroup(group = unique(filt_map_data$animal_id)) |>
+      clearGroup(group = unique(full_data$animal_id)) 
+    
+    # Add layer selection and track lines
+    map <- map |>
       addTrackLayersControl(filt_map_data) |> 
       addTrackLines(filt_map_data, dateline = input$dateline)
     
