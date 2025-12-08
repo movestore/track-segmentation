@@ -25,12 +25,15 @@ Sys.setenv("APP_ARTIFACTS_DIR" = tempdir())
 
 data <- move2_to_seg(data_raw)
 
+time_range_start <- as.POSIXct(min(data$timestamp))
+time_range_end   <- as.POSIXct(max(data$timestamp))
+
 # check_data_frame(data)
 
 # ------------------------------------------------------------------------------
 
 ui <- fluidPage(
-  seg_ui(data = data_raw, min_hours = 6, proximity = 150, step = 86400)
+  seg_ui(min_hours = 6, proximity = 150, start = time_range_start, end = time_range_end, step = 86400)
 )
 
 server <- function(input, output, session) {
@@ -45,17 +48,6 @@ server <- function(input, output, session) {
   bbox_adj <- reactive({
     adj_bbox(bbox(), dateline = input$dateline)
   })
-  
-  # Ideally need to update the algorithm to simply ingest dl adjusted data...
-  # right now the algorithm itself does the adjustment. But presumably
-  # we should be able to update up front and still get the same stop/metastop output
-  # without the algorithm needing to do this adjustment...
-  # dl_adj_data <- reactive({
-  #   d <- map_data()$data
-  #   req(d)
-  # 
-  #   d <- 
-  # })
   
   filt_data <- reactive({
     d <- map_data()$data

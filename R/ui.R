@@ -1,52 +1,42 @@
 
-time_range_slider <- function(data, step) {
+time_range_slider <- function(start, end, step) {
   sliderInput(
     "timeRange",
-    paste(
-      "Time range of interest"
-      # "Maximum Stopover Proximity Distance:", proximity, 
-      # " (m) -- Minimum Stopover Duration:", min_hours,
-      # "(hrs) -- ", 
-      # "Study Name:", name
-    ),
-    min = as.POSIXct(min(data$timestamp)),
-    max = as.POSIXct(max(data$timestamp)),
-    value = c(
-      as.POSIXct(min(data$timestamp)),
-      as.POSIXct(max(data$timestamp))
-    ),
-    width = "100%",
+    "Time range of interest",
+    min = start,
+    max = end,
+    value = c(start, end),
+    timezone = "UTC",
     timeFormat = "%Y-%m-%d",
-    step = step,
-    animate = TRUE
+    step = step
   )
 }
 
-segmentation_panel <- function(proximity, min_hours) {
-  div(
-    absolutePanel(
-      class = "slider-panel",
-      top = 164, 
-      left = 80, 
-      width = 300,
-      sliderInput("proximity", "Max distance proximity", min = 0, max = 1000, value = proximity),
-      sliderInput("min_hours", "Minimum hours threshold", min = 0, max = 24, value = min_hours),
-      checkboxInput("dateline", "Tracks cross dateline", value = FALSE),
-      actionButton("recalc", "Recalculate stops")
-    )
+segmentation_panel <- function(proximity, min_hours, start, end, step) {
+  absolutePanel(
+    class = "slider-panel",
+    id = "seg-panel",
+    top = 54,
+    tags$h4("Segmentation Parameters"),
+    tags$p("Set the location distance and time used to identify stops."),
+    numericInput("proximity", "Maximum distance between stopped locations (meters)", min = 0, value = proximity),
+    numericInput("min_hours", "Minimum stop time (hours)", min = 0, value = min_hours),
+    actionButton("recalc", "Calculate stop locations"),
+    tags$hr(),
+    time_range_slider(start, end, step),
+    checkboxInput("dateline", "Tracks cross dateline", value = FALSE),
   )
 }
 
-seg_ui <- function(data, min_hours, proximity, step) {
+seg_ui <- function(min_hours, proximity, start, end, step) {
   tagList(
     shinyjs::useShinyjs(),
     includeCSS("www/styles.css"),
     tabsetPanel(
       tabPanel(
         "Map",
-        time_range_slider(data, step),    
-        segmentation_panel(proximity = proximity, min_hours = min_hours),
-        leafletOutput("map", height = "calc(100vh - 175px)")
+        segmentation_panel(proximity = proximity, min_hours = min_hours, start = start, end = end, step = step),
+        leafletOutput("map", height = "calc(100vh - 50px)")
       ),
       tabPanel(
         "Data",

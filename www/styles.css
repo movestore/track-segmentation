@@ -29,14 +29,21 @@
   margin: 5px -8px;
 }
 
+.slider-panel hr {
+  border-top: 1px solid #c4c4c4;
+  margin: 15px -20px;
+}
+
 .slider-panel {
   position: absolute;
   cursor: inherit;
   z-index: 450;
-  padding: 10px 8px;
+  padding: 10px 20px;
   background: rgba(255,255,255,0.9);
   border-radius: 5px;
   border: 1px solid rgba(0, 0, 0, 0.2);
+  left: 80px; 
+  width: 320px;
 }
 
 .overlay {
