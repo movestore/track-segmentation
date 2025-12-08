@@ -20,6 +20,23 @@
   height: 10px;
 }
 
+.invalid-btn {
+  background-color: #f4f9ff !important;   /* light blue */
+  box-shadow: 0 0 6px rgba(0, 102, 204, 0.25) !important; /* faint glow */
+}
+
+.invalid-btn:hover {
+  background-color: #d9ebff !important;
+  transition: 
+    background-color 0.2s ease-in-out;
+}
+
+.valid-btn {
+  background-color: #eeeeee !important;   /* soft light grey */
+  border-color: #d5d5d5 !important;       /* faint grey border */
+  color: #555555 !important;              /* muted text */
+}
+
 .legend-circle.unclass-pt {
   border: 1px solid #777;
 }

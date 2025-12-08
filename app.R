@@ -73,9 +73,11 @@ server <- function(input, output, session) {
   
   observe({
     if (button_invalid()) {
-      shinyjs::enable("recalc")
+      shinyjs::removeClass("recalc", "valid-btn")
+      shinyjs::addClass("recalc", class = "invalid-btn")
     } else {
-      shinyjs::disable("recalc")
+      shinyjs::removeClass("recalc", "invalid-btn")
+      shinyjs::addClass("recalc", "valid-btn")
     }
   })
   
