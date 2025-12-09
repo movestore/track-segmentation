@@ -25,10 +25,9 @@ move2_to_seg <- function(data) {
     dplyr::mutate(
       animal_id = as.character(animal_id), # Factor also works, so this may already be enforced by move2
       latitude = coords[, 2],
-      longitude = coords[, 1],
-      species = "Misc"
+      longitude = coords[, 1]
     ) |> 
-    dplyr::select(animal_id, timestamp, latitude, longitude, lc, species) |> 
+    dplyr::select(animal_id, timestamp, latitude, longitude, lc) |> 
     dplyr::arrange(move2::mt_track_id(data), move2::mt_time(data)) |> 
     na.omit() |> 
     tibble::as_tibble()
@@ -42,7 +41,7 @@ move2_to_seg <- function(data) {
 }
 
 check_data_frame <- function(df) {
-  required_columns <- c("animal_id", "timestamp", "latitude", "longitude", "lc", "species")
+  required_columns <- c("animal_id", "timestamp", "latitude", "longitude", "lc")
   
   # Check for presence of all required columns
   if (!all(required_columns %in% names(df))) {
@@ -56,8 +55,7 @@ check_data_frame <- function(df) {
   if (!is.numeric(df$latitude)) stop("latitude must be numeric.")
   if (!is.numeric(df$longitude)) stop("longitude must be numeric.")
   if (!is.character(df$lc)) stop("lc must be of type character.")
-  if (!is.character(df$species)) stop("species must be of type character.")
-  
+
   # Check value ranges
   if (any(df$latitude < -90 | df$latitude > 90, na.rm = TRUE)) {
     stop("latitude values must be between -90 and 90.")
@@ -251,7 +249,6 @@ stops_to_metastops <- function(data) {
                   timestamp,
                   latitude,
                   longitude,
-                  species,
                   n_locs) |> 
     na.omit() |>
     arrange(animal_id, timestamp) |>
@@ -370,7 +367,6 @@ tidy_metastop_data <- function(data, dateline = FALSE) {
       gis_elon,
       n_locs, 
       lc, 
-      species, 
       -stop_hours, 
       -metastop
     ) |> 
@@ -388,7 +384,7 @@ data_for_leaflet <- function(data) {
       n_stops = n_locs,
       myRadius = if_else(stopover == 13, ((n_stops / 10 * myRadius) + myRadius), myRadius)
     ) |> 
-    dplyr::select(animal_id, timestamp, latitude, longitude, lc, stop_days, locType, myRadius, stop_id, n_stops, species) |>
+    dplyr::select(animal_id, timestamp, latitude, longitude, lc, stop_days, locType, myRadius, stop_id, n_stops) |>
     ungroup()
   
   # Validate and filter coordinates...

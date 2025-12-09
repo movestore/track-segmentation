@@ -11,7 +11,6 @@ prep_stops_output <- function(data) {
     dplyr::select(
       animal_id,
       stop_id,
-      species,
       start_time,
       end_time,
       latitude,
@@ -33,7 +32,6 @@ prep_metastops_output <- function(data) {
     select(
       animal_id,
       meta_stop_id = stop_id,
-      species,
       start_time,
       end_time,
       latitude = gis_lat,
@@ -60,7 +58,6 @@ prep_location_output <- function(data1, data2) {
     ) |> 
     select(
       animal_id, 
-      species, 
       timestamp, 
       latitude = gis_lat, 
       longitude = gis_lon, 

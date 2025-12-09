@@ -136,7 +136,6 @@ addTrackLocationMarkers <- function(map, data) {
         # weight = 2,
         popup = ~paste(
           bold("Animal:"), animal_id, "<br>",
-          bold("Species:"), species, "<br>",
           bold("Time:"), timestamp, "<br>",
           bold("Location Type:"), "Not yet classified <br>",
           bold("Location Class:"), lc, "<br>",
@@ -165,7 +164,6 @@ addTrackStopMarkers <- function(map, data) {
         stroke = FALSE,
         popup = ~paste(
           bold("Animal:"), animal_id, "<br>",
-          bold("Species:"), species, "<br>",
           bold("Time:"), timestamp, "<br>",
           bold("Location Type:"), locType, "<br>",
           bold("Location Class:"), lc, "<br>",
