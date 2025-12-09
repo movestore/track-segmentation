@@ -224,11 +224,27 @@ server <- function(input, output, session) {
   })
   
   output$stop_data <- DT::renderDataTable({
-    prep_stops_output(find_stops()$result)
+    d <- req(find_stops()$result)
+    
+    d <- dplyr::filter(
+      d, 
+      timestamp >= input$timeRange[1], 
+      timestamp <= input$timeRange[2]
+    )
+    
+    prep_stops_output(d)
   })
   
   output$metastop_data <- DT::renderDataTable({
-    prep_metastops_output(find_metastops())
+    d <- req(find_metastops())
+    
+    d <- dplyr::filter(
+      d, 
+      timestamp >= input$timeRange[1], 
+      timestamp <= input$timeRange[2]
+    )
+    
+    prep_metastops_output(d)
   })
 }
 
