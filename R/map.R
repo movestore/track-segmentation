@@ -135,12 +135,12 @@ addTrackLocationMarkers <- function(map, data) {
         stroke = FALSE,
         # weight = 2,
         popup = ~paste(
-          "Animal:", animal_id, "<br>",
-          "Species:", species, "<br>",
-          "Time:", timestamp, "<br>",
-          "Location Type: Not yet classified <br>",
-          "Location Class:", lc, "<br>",
-          "Coordinates:", round(latitude, 4), ",", round(longitude, 4)
+          bold("Animal:"), animal_id, "<br>",
+          bold("Species:"), species, "<br>",
+          bold("Time:"), timestamp, "<br>",
+          bold("Location Type:"), "Not yet classified <br>",
+          bold("Location Class:"), lc, "<br>",
+          bold("Coordinates:"), round(latitude, 4), ",", round(longitude, 4)
         ),
         group = animal,
         options = pathOptions(zIndexOffset = 200)
@@ -164,15 +164,15 @@ addTrackStopMarkers <- function(map, data) {
         fillOpacity = 0.8,
         stroke = FALSE,
         popup = ~paste(
-          "Animal:", animal_id, "<br>",
-          "Species:", species, "<br>",
-          "Time:", timestamp, "<br>",
-          "Location Type:", locType, "<br>",
-          "Location Class:", lc, "<br>",
-          "Stop Days:", stop_days, "<br>",
-          "N stops:", n_stops, "<br>",
-          "Stop ID:", stop_id, "<br>",
-          "Coordinates:", round(latitude, 4), ",", round(longitude, 4)
+          bold("Animal:"), animal_id, "<br>",
+          bold("Species:"), species, "<br>",
+          bold("Time:"), timestamp, "<br>",
+          bold("Location Type:"), locType, "<br>",
+          bold("Location Class:"), lc, "<br>",
+          bold("Stop Days:"), stop_days, "<br>",
+          bold("N stops:"), n_stops, "<br>",
+          bold("Stop ID:"), stop_id, "<br>",
+          bold("Coordinates:"), round(latitude, 4), ",", round(longitude, 4)
         ),
         group = animal,
         options = pathOptions(zIndexOffset = 200)
@@ -253,4 +253,8 @@ lc_colors <- function() {
 
 unclassified_color <- function() {
   "lightgray"
+}
+
+bold <- function(x) {
+  paste0("<strong>", x, "</strong>")
 }
