@@ -460,5 +460,9 @@ has_argos_lc <- function(data) {
 }
 
 get_elon <- function(lon, dateline = FALSE) {
-  ifelse(lon < 0 & dateline, lon + 360, lon)
+  if (dateline) {
+    ifelse(lon < 0, lon + 360, lon)
+  } else {
+    lon
+  }
 }

@@ -36,25 +36,64 @@ create_basemap <- function(bbox) {
     )
 }
 
-adj_bbox <- function(bbox, dateline = FALSE) {
-  bbox_crosses_dateline <- crosses_dateline(bbox)
+# Adjust bbox to cross/not cross dateline depending on current crossing status
+adj_bbox <- function(bbox, should_cross_dl) {
+  crosses_dl <- bbox$crosses_dl
+  bbox_adj <- bbox$bbox
   
-  if (bbox_crosses_dateline && !dateline) {
+  if (crosses_dl && !should_cross_dl) {
     # If already crosses, but dateline = FALSE, adjust
-    bbox <- c(bbox[3] - 360, bbox[2:1], bbox[4])
-  } else if (!bbox_crosses_dateline && dateline) {
+    bbox_adj <- c(bbox_adj[3] - 360, bbox_adj[2:1], bbox_adj[4])
+    crosses_dl <- FALSE
+  } else if (!crosses_dl && should_cross_dl) {
     # If doesn't cross, but dateline = TRUE, adjust
-    bbox <- c(bbox[3:2], bbox[1] + 360, bbox[4])
+    bbox_adj <- c(bbox_adj[3:2], bbox_adj[1] + 360, bbox_adj[4])
+    crosses_dl <- TRUE
   }
   
-  bbox
+  list(
+    bbox = bbox_adj,
+    crosses_dl = crosses_dl
+  )
 }
 
-crosses_dateline <- function(bbox) {
-  bbox[[1]] < 180 & bbox[[3]] > 180
+# Intersect a set of LINESTRINGS with the international dateline to determine
+# if tracks automatically cross or not
+st_crosses_dateline <- function(data) {
+  any(sf::st_intersects(data, sfc_idl(), sparse = FALSE))
 }
 
-addTrackLines <- function(map, data, dateline = FALSE) {
+sfc_idl <- function() {
+  idl_coords <- matrix(c(180, -90, 180, 90), nrow = 2, byrow = TRUE)
+  
+  sf::st_sfc(
+    sf::st_linestring(idl_coords),
+    crs = 4326
+  )
+}
+
+# Initial bbox for input data. Determine whether the data cross the dateline
+# for correct map initialization.
+get_init_bbox <- function(data) {
+  bbox <- list(
+    bbox = sf::st_bbox(data),
+    crosses_dl = FALSE
+  )
+  
+  crosses_dl <- data |> 
+    dplyr::group_by(move2::mt_track_id(data)) |> 
+    dplyr::summarize(
+      n = n(),
+      geometry = sf::st_combine(geometry)
+    ) |> 
+    dplyr::filter(n > 1) |> # Can't build linestring from single point
+    sf::st_cast("LINESTRING") |> 
+    st_crosses_dateline()
+  
+  adj_bbox(bbox, should_cross_dl = crosses_dl)
+}
+
+addTrackLines <- function(map, data) {
   animals <- unique(data$animal_id)
   
   # Add animal IDs as overlay groups
@@ -71,7 +110,7 @@ addTrackLines <- function(map, data, dateline = FALSE) {
       addPolylines(
         data = data[data$animal_id == animal, ],
         lat = ~latitude,
-        lng = ~get_elon(longitude, dateline = dateline),
+        lng = ~longitude,
         color = "white",
         weight = 1,
         opacity = 0.3,
@@ -83,12 +122,12 @@ addTrackLines <- function(map, data, dateline = FALSE) {
   map
 }
 
-addTrackLocationMarkers <- function(map, data, dateline = FALSE) {
+addTrackLocationMarkers <- function(map, data) {
   for (animal in unique(data$animal_id)) {
     map <- map |> 
       addCircleMarkers(
         data = data[data$animal_id == animal, ],
-        lng = ~get_elon(longitude, dateline = dateline),
+        lng = ~longitude,
         lat = ~latitude,
         fillColor = unclassified_color(),
         radius = 3,
@@ -111,14 +150,14 @@ addTrackLocationMarkers <- function(map, data, dateline = FALSE) {
   map
 }
 
-addTrackStopMarkers <- function(map, data, dateline) {
+addTrackStopMarkers <- function(map, data) {
   pal <- stopover_pal()
   
   for (animal in unique(data$animal_id)) {
     map <- map |> 
       addCircleMarkers(
         data = data[data$animal_id == animal, ],
-        lng = ~get_elon(longitude, dateline = dateline),
+        lng = ~longitude,
         lat = ~latitude,
         color = ~pal(locType),
         radius = ~myRadius,

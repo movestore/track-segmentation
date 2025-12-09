@@ -21,7 +21,7 @@ Sys.setenv("APP_ARTIFACTS_DIR" = tempdir())
 # data_raw <- move2::movebank_download_study(study_id = 438644854, sensor_type_id = "argos-doppler-shift")
 # data_raw <- move2::movebank_download_study(study_id = 1718959411, sensor_type = "argos")
 
-# bbox <- sf::st_bbox(data_raw)
+init_bbox <- get_init_bbox(data_raw)
 
 data <- move2_to_seg(data_raw)
 
@@ -33,7 +33,14 @@ time_range_end   <- as.POSIXct(max(data$timestamp))
 # ------------------------------------------------------------------------------
 
 ui <- fluidPage(
-  seg_ui(min_hours = 6, proximity = 150, start = time_range_start, end = time_range_end, step = 86400)
+  seg_ui(
+    min_hours = 6, 
+    proximity = 150, 
+    start = time_range_start, 
+    end = time_range_end, 
+    step = 86400, 
+    init_dl = init_bbox$crosses_dl
+  )
 )
 
 server <- function(input, output, session) {
@@ -41,17 +48,16 @@ server <- function(input, output, session) {
   has_metastops <- reactiveVal(FALSE)
   results_zip <- reactiveVal(NULL)
   map_data <- reactiveVal(list(type = "init", data = data))
-  bbox <- reactiveVal(sf::st_bbox(data_raw))
   map_trigger <- reactiveVal(0)
   button_invalid <- reactiveVal(TRUE)
-  
-  bbox_adj <- reactive({
-    adj_bbox(bbox(), dateline = input$dateline)
+  bbox <- reactiveVal(init_bbox)
+
+  observe({
+    bbox(adj_bbox(bbox(), input$dateline))
   })
   
   filt_data <- reactive({
-    d <- map_data()$data
-    req(d)
+    d <- req(map_data()$data)
     
     dplyr::filter(
       d, 
@@ -143,24 +149,24 @@ server <- function(input, output, session) {
   
   # Create the initial base map...
   output$map <- renderLeaflet({
-    create_basemap(isolate(bbox_adj()))
+    create_basemap(init_bbox$bbox)
   })
   
+  # Update bounds when bbox changes (only on input$dateline toggle)
   observe({
-    input$dateline
-    
-    bbox <- req(bbox_adj())
+    cur_bbox <- req(bbox())
     
     leafletProxy("map") |> 
       fitBounds(
-        lng1 = bbox[["xmin"]],
-        lat1 = bbox[["ymin"]],
-        lng2 = bbox[["xmax"]],
-        lat2 = bbox[["ymax"]]
+        lng1 = cur_bbox$bbox[["xmin"]],
+        lat1 = cur_bbox$bbox[["ymin"]],
+        lng2 = cur_bbox$bbox[["xmax"]],
+        lat2 = cur_bbox$bbox[["ymax"]]
       )
   })
   
-  # Update tracking data when time range changes...
+  # Update map on time range change, change in segmentation data results,
+  # or change in map bounds (proxy for dateline change)
   observe({
     # Dependency on map render counter ensures that we always re-render
     # map on input$recalc trigger, even if inputs don't change.
@@ -168,36 +174,31 @@ server <- function(input, output, session) {
     # we need more control over temporal ordering of processing steps)
     map_trigger()
     
-    d <- map_data()
-    
-    filt_map_data <- filt_data()
+    d <- req(map_data())
+    filt_map_data <- req(filt_data())
+    cur_bbox <- req(bbox())
 
-    req(filt_map_data)
-    req(d)
-    
-    data_status <- d$type
-    full_data <- d$data
+    # Only take the time to update longitude values if dateline = TRUE
+    if (cur_bbox$crosses_dl) {
+      filt_map_data <- filt_map_data |> 
+        mutate(longitude = get_elon(longitude, dateline = TRUE))
+    }
     
     # Clear existing animals using non-filtered data. Filtered data will no
     # longer contain these animal IDs and they will stick to the map instead of
     # disappearing
     map <- leafletProxy("map") |> 
-      clearGroup(group = unique(full_data$animal_id)) 
-    
-    # Add layer selection and track lines
-    map <- map |>
-      addTrackLayersControl(filt_map_data) |> 
-      addTrackLines(filt_map_data, dateline = input$dateline)
+      clearGroup(group = unique(d$data$animal_id)) |>
+      addTrackLayersControl(filt_map_data) |> # Add layer selection panels
+      addTrackLines(filt_map_data) # Add track lines
     
     # Initial data do not have all necessary attributes for coloring in the same
     # way as processed data. After the first time stops are calculated, we can
     # render with the stop/metastop styling
-    if (data_status == "init") {
-      map <- map |>
-        addTrackLocationMarkers(filt_map_data, dateline = input$dateline)
+    if (d$type == "init") {
+      map <- addTrackLocationMarkers(map, filt_map_data)
     } else {
-      map <- map |>
-        addTrackStopMarkers(filt_map_data, dateline = input$dateline)
+      map <- addTrackStopMarkers(map, filt_map_data)
     }
     
     shinybusy::remove_modal_spinner()

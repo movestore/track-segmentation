@@ -12,7 +12,7 @@ time_range_slider <- function(start, end, step) {
   )
 }
 
-segmentation_panel <- function(proximity, min_hours, start, end, step) {
+segmentation_panel <- function(proximity, min_hours, start, end, step, init_dl) {
   absolutePanel(
     class = "slider-panel",
     id = "seg-panel",
@@ -24,18 +24,18 @@ segmentation_panel <- function(proximity, min_hours, start, end, step) {
     actionButton("recalc", "Calculate stop locations"),
     tags$hr(),
     time_range_slider(start, end, step),
-    checkboxInput("dateline", "Tracks cross dateline", value = FALSE),
+    checkboxInput("dateline", "Tracks cross dateline", value = init_dl)
   )
 }
 
-seg_ui <- function(min_hours, proximity, start, end, step) {
+seg_ui <- function(min_hours, proximity, start, end, step, init_dl) {
   tagList(
     shinyjs::useShinyjs(),
     includeCSS("www/styles.css"),
     tabsetPanel(
       tabPanel(
         "Map",
-        segmentation_panel(proximity = proximity, min_hours = min_hours, start = start, end = end, step = step),
+        segmentation_panel(proximity = proximity, min_hours = min_hours, start = start, end = end, step = step, init_dl = init_dl),
         leafletOutput("map", height = "calc(100vh - 50px)")
       ),
       tabPanel(
