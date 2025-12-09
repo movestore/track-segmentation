@@ -110,7 +110,7 @@ addTrackLines <- function(map, data) {
       addPolylines(
         data = data[data$animal_id == animal, ],
         lat = ~latitude,
-        lng = ~longitude,
+        lng = ~longitude_adj,
         color = "white",
         weight = 1,
         opacity = 0.3,
@@ -127,7 +127,7 @@ addTrackLocationMarkers <- function(map, data) {
     map <- map |> 
       addCircleMarkers(
         data = data[data$animal_id == animal, ],
-        lng = ~longitude,
+        lng = ~longitude_adj,
         lat = ~latitude,
         fillColor = unclassified_color(),
         radius = 3,
@@ -157,7 +157,7 @@ addTrackStopMarkers <- function(map, data) {
     map <- map |> 
       addCircleMarkers(
         data = data[data$animal_id == animal, ],
-        lng = ~longitude,
+        lng = ~longitude_adj,
         lat = ~latitude,
         color = ~pal(locType),
         radius = ~myRadius,

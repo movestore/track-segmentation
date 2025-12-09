@@ -51,7 +51,7 @@ server <- function(input, output, session) {
   map_trigger <- reactiveVal(0)
   button_invalid <- reactiveVal(TRUE)
   bbox <- reactiveVal(init_bbox)
-
+  
   observe({
     bbox(adj_bbox(bbox(), input$dateline))
   })
@@ -177,12 +177,9 @@ server <- function(input, output, session) {
     d <- req(map_data())
     filt_map_data <- req(filt_data())
     cur_bbox <- req(bbox())
-
-    # Only take the time to update longitude values if dateline = TRUE
-    if (cur_bbox$crosses_dl) {
-      filt_map_data <- filt_map_data |> 
-        mutate(longitude = get_elon(longitude, dateline = TRUE))
-    }
+    
+    filt_map_data <- filt_map_data |> 
+      mutate(longitude_adj = get_elon(longitude, dateline = cur_bbox$crosses_dl))
     
     # Clear existing animals using non-filtered data. Filtered data will no
     # longer contain these animal IDs and they will stick to the map instead of
