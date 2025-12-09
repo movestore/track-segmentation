@@ -33,8 +33,7 @@ segmentation_panel <- function(proximity, min_hours, start, end, step, init_dl) 
     ),
     actionButton("recalc", "Calculate stop locations"),
     tags$hr(),
-    time_range_slider(start, end, step),
-    checkboxInput("dateline", "Tracks cross dateline", value = init_dl)
+    time_range_slider(start, end, step)
   )
 }
 

@@ -21,8 +21,7 @@ Sys.setenv("APP_ARTIFACTS_DIR" = tempdir())
 # data_raw <- move2::movebank_download_study(study_id = 438644854, sensor_type_id = "argos-doppler-shift")
 # data_raw <- move2::movebank_download_study(study_id = 1718959411, sensor_type = "argos")
 
-init_bbox <- get_init_bbox(data_raw)
-
+bbox <- get_init_bbox(data_raw)
 data <- move2_to_seg(data_raw)
 
 time_range_start <- as.POSIXct(min(data$timestamp))
@@ -39,7 +38,7 @@ ui <- fluidPage(
     start = time_range_start, 
     end = time_range_end, 
     step = 86400, 
-    init_dl = init_bbox$crosses_dl
+    init_dl = bbox$crosses_dl
   )
 )
 
@@ -50,12 +49,7 @@ server <- function(input, output, session) {
   map_data <- reactiveVal(list(type = "init", data = data))
   map_trigger <- reactiveVal(0)
   button_invalid <- reactiveVal(TRUE)
-  bbox <- reactiveVal(init_bbox)
-  
-  observe({
-    bbox(adj_bbox(bbox(), input$dateline))
-  })
-  
+
   filt_data <- reactive({
     d <- req(map_data()$data)
     
@@ -90,10 +84,10 @@ server <- function(input, output, session) {
   find_stops <- eventReactive(input$recalc, {
     stops <- tryCatch(
       suppressWarnings(
-        id_stops(data, input$min_hours, input$proximity, dateline = input$dateline)
+        id_stops(data, input$min_hours, input$proximity, dateline = bbox$crosses_dl)
       ),
       error = function(cnd) {
-        mutate_empty_stops(data, dateline = input$dateline)
+        mutate_empty_stops(data, dateline = bbox$crosses_dl)
       }
     )
     
@@ -111,7 +105,7 @@ server <- function(input, output, session) {
     
     metastops <- tryCatch(
       suppressWarnings(
-        id_metastops(stops$result, stops$min_hours, stops$proximity, dateline = input$dateline)
+        id_metastops(stops$result, stops$min_hours, stops$proximity, dateline = bbox$crosses_dl)
       ),
       error = function(cnd) {
         mutate_empty_metastops(stops$result)
@@ -149,20 +143,7 @@ server <- function(input, output, session) {
   
   # Create the initial base map...
   output$map <- renderLeaflet({
-    create_basemap(init_bbox$bbox)
-  })
-  
-  # Update bounds when bbox changes (only on input$dateline toggle)
-  observe({
-    cur_bbox <- req(bbox())
-    
-    leafletProxy("map") |> 
-      fitBounds(
-        lng1 = cur_bbox$bbox[["xmin"]],
-        lat1 = cur_bbox$bbox[["ymin"]],
-        lng2 = cur_bbox$bbox[["xmax"]],
-        lat2 = cur_bbox$bbox[["ymax"]]
-      )
+    create_basemap(bbox$bbox)
   })
   
   # Update map on time range change, change in segmentation data results,
@@ -176,10 +157,9 @@ server <- function(input, output, session) {
     
     d <- req(map_data())
     filt_map_data <- req(filt_data())
-    cur_bbox <- req(bbox())
-    
+
     filt_map_data <- filt_map_data |> 
-      mutate(longitude_adj = get_elon(longitude, dateline = cur_bbox$crosses_dl))
+      mutate(longitude_adj = get_elon(longitude, dateline = bbox$crosses_dl))
     
     # Clear existing animals using non-filtered data. Filtered data will no
     # longer contain these animal IDs and they will stick to the map instead of
