@@ -229,7 +229,7 @@ server <- function(input, output, session) {
       timestamp <= input$timeRange[2]
     )
     
-    prep_stops_output(d)
+    prettify(prep_stops_output(d))
   })
   
   output$metastop_data <- DT::renderDataTable({
@@ -241,7 +241,7 @@ server <- function(input, output, session) {
       timestamp <= input$timeRange[2]
     )
     
-    prep_metastops_output(d)
+    prettify(prep_metastops_output(d))
   })
 }
 

@@ -10,15 +10,14 @@ prep_stops_output <- function(data) {
     dplyr::mutate(locType = "Stopover") |>
     dplyr::select(
       animal_id,
+      stop_id,
       species,
       start_time,
       end_time,
-      stop_hours,
       latitude,
       longitude,
-      locType,
-      n_locs,
-      stop_id
+      stop_hours,
+      n_locs
     ) |>
     na.omit()
 }
@@ -33,15 +32,14 @@ prep_metastops_output <- function(data) {
     filter(stopover == 13) |>
     select(
       animal_id,
+      meta_stop_id = stop_id,
       species,
       start_time,
       end_time,
-      stop_days,
       latitude = gis_lat,
       longitude = gis_lon,
-      locType,
-      n_stops = n_locs,
-      meta_stop_id = stop_id
+      stop_days,
+      n_stops = n_locs
     )
 }
 
@@ -157,5 +155,13 @@ sanitize_studyName <- function(studyName) {
   # Replace invalid characters with an underscore...
   cleaned_studyName <- gsub(invalid_chars, "_", studyName)
   return(cleaned_studyName)
+}
+
+prettify <- function(data, digits = 3) {
+  dplyr::mutate(
+    data,
+    dplyr::across(dplyr::where(is.numeric), ~ round(.x, digits)),
+    dplyr::across(dplyr::where(~ inherits(.x, "POSIXct")), ~ format(.x, "%Y-%m-%d %H:%M:%S %Z"))
+  )
 }
 
