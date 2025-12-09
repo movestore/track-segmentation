@@ -197,7 +197,7 @@ legend_item <- function(color, label, class = NULL) {
 }
 
 stopover_pal <- function(colors = lc_colors()) {
-  leaflet::colorFactor(colors, unique(stopover_labels()))
+  leaflet::colorFactor(colors, unique(stopover_labels()), levels = unique(stopover_labels()))
 }
 
 legend_colors <- function() {
@@ -205,11 +205,11 @@ legend_colors <- function() {
 }
 
 legend_labels <- function() {
-  sort(unique(stopover_labels()))
+  unique(stopover_labels())
 }
 
 lc_colors <- function() {
-  c("red", "blue", "cyan", "yellow")
+  c("#e31a1c", "#ffde05", "#00f6d0", "#1133f5")
 }
 
 unclassified_color <- function() {

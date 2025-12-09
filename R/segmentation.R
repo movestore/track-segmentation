@@ -441,9 +441,9 @@ stopover_radii <- function() {
 
 stopover_labels <- function() {
   c(
-    "13" = "MetaStop",
+    "13" = "Metastop",
     "12" = "Stopped",
-    "10" = "MovementDuringStop",
+    "10" = "Movement during stop",
     "2"  = "Movement",
     "0"  = "Movement"
   )
