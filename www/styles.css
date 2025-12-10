@@ -83,3 +83,14 @@
   overflow-y: auto;
   overflow-x: hidden;
 }
+
+.tooltip-inner {
+  max-width: 300px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.tooltip.right .tooltip-inner {
+  width: 300px !important;
+  text-align: left;
+}

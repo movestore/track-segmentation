@@ -19,8 +19,18 @@ segmentation_panel <- function(proximity, min_hours, start, end, step, init_dl) 
     top = 54,
     tags$h4("Segmentation Parameters"),
     tags$p("Set the location distance and time used to identify stops."),
-    numericInput("proximity", "Maximum distance between stopped locations (meters)", min = 0, value = proximity),
-    numericInput("min_hours", "Minimum stop time (hours)", min = 0, value = min_hours),
+    numericInput(
+      "proximity", 
+      "Maximum distance between stopped locations (meters)",
+      min = 0, 
+      value = proximity
+    ),
+    numericInput(
+      "min_hours", 
+      "Minimum stop time (hours)", 
+      min = 0, 
+      value = min_hours
+    ),
     actionButton("recalc", "Calculate stop locations"),
     tags$hr(),
     time_range_slider(start, end, step),
@@ -31,6 +41,8 @@ segmentation_panel <- function(proximity, min_hours, start, end, step, init_dl) 
 seg_ui <- function(min_hours, proximity, start, end, step, init_dl) {
   tagList(
     shinyjs::useShinyjs(),
+    shinyBS::bsTooltip(id = "proximity", title = proximity_info(), placement = "right"),
+    shinyBS::bsTooltip(id = "min_hours", title = duration_info(), placement = "right"),
     includeCSS("www/styles.css"),
     tabsetPanel(
       tabPanel(
@@ -48,5 +60,22 @@ seg_ui <- function(min_hours, proximity, start, end, step, init_dl) {
         )
       )
     )
+  )
+}
+
+proximity_info <- function() {
+  paste0(
+    "Set the maximum allowable pairwise distance (in meters) among all ",
+    "locations that constitute a stop. ",
+    "Locations belonging to a given stop will all be within this distance of ",
+    "one another."
+  )
+}
+
+duration_info <- function() {
+  paste0(
+    "Set the minimum required duration that a stop must persist. ",
+    "The elapsed time between the first and last locations in a given stop ",
+    "will be greater than this value."
   )
 }
