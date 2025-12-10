@@ -39,27 +39,6 @@ create_basemap <- function(bbox) {
     addMapPane("stops", zIndex = 450)
 }
 
-# Adjust bbox to cross/not cross dateline depending on current crossing status
-adj_bbox <- function(bbox, should_cross_dl) {
-  crosses_dl <- bbox$crosses_dl
-  bbox_adj <- bbox$bbox
-  
-  if (crosses_dl && !should_cross_dl) {
-    # If already crosses, but dateline = FALSE, adjust
-    bbox_adj <- c(bbox_adj[3] - 360, bbox_adj[2:1], bbox_adj[4])
-    crosses_dl <- FALSE
-  } else if (!crosses_dl && should_cross_dl) {
-    # If doesn't cross, but dateline = TRUE, adjust
-    bbox_adj <- c(bbox_adj[3:2], bbox_adj[1] + 360, bbox_adj[4])
-    crosses_dl <- TRUE
-  }
-  
-  list(
-    bbox = bbox_adj,
-    crosses_dl = crosses_dl
-  )
-}
-
 # Intersect a set of LINESTRINGS with the international dateline to determine
 # if tracks automatically cross or not
 st_crosses_dateline <- function(data) {
@@ -77,13 +56,8 @@ sfc_idl <- function() {
 
 # Initial bbox for input data. Determine whether the data cross the dateline
 # for correct map initialization.
-get_init_bbox <- function(data) {
-  bbox <- list(
-    bbox = sf::st_bbox(data),
-    crosses_dl = FALSE
-  )
-  
-  crosses_dl <- data |> 
+move2_crosses_dateline <- function(data) {
+  data |> 
     dplyr::group_by(move2::mt_track_id(data)) |> 
     dplyr::summarize(
       n = n(),
@@ -92,8 +66,22 @@ get_init_bbox <- function(data) {
     dplyr::filter(n > 1) |> # Can't build linestring from single point
     sf::st_cast("LINESTRING") |> 
     st_crosses_dateline()
+}
+
+get_init_bbox <- function(data, dateline) {
+  elon_range <- range(get_elon(data$longitude, dateline))
+  lat_range  <- range(data$latitude)
   
-  adj_bbox(bbox, should_cross_dl = crosses_dl)
+  bbox <- sf::st_bbox(
+    c(
+      xmin = min(elon_range),
+      ymin = min(lat_range),
+      xmax = max(elon_range),
+      ymax = max(lat_range)
+    )
+  )
+  
+  bbox
 }
 
 addTrackLines <- function(map, data) {

@@ -21,8 +21,10 @@ Sys.setenv("APP_ARTIFACTS_DIR" = tempdir())
 # data_raw <- move2::movebank_download_study(study_id = 438644854, sensor_type_id = "argos-doppler-shift")
 # data_raw <- move2::movebank_download_study(study_id = 1718959411, sensor_type = "argos")
 
-bbox <- get_init_bbox(data_raw)
+# Use sf to identify whether IDL is crossed
+crosses_dl <- move2_crosses_dateline(data_raw)
 data <- move2_to_seg(data_raw)
+bbox <- get_init_bbox(data, crosses_dl)
 
 time_range_start <- as.POSIXct(min(data$timestamp))
 time_range_end   <- as.POSIXct(max(data$timestamp))
@@ -38,7 +40,7 @@ ui <- fluidPage(
     start = time_range_start, 
     end = time_range_end, 
     step = 86400, 
-    init_dl = bbox$crosses_dl
+    init_dl = crosses_dl
   )
 )
 
@@ -84,10 +86,10 @@ server <- function(input, output, session) {
   find_stops <- eventReactive(input$recalc, {
     stops <- tryCatch(
       suppressWarnings(
-        id_stops(data, input$min_hours, input$proximity, dateline = bbox$crosses_dl)
+        id_stops(data, input$min_hours, input$proximity, dateline = crosses_dl)
       ),
       error = function(cnd) {
-        mutate_empty_stops(data, dateline = bbox$crosses_dl)
+        mutate_empty_stops(data, dateline = crosses_dl)
       }
     )
     
@@ -105,7 +107,7 @@ server <- function(input, output, session) {
     
     metastops <- tryCatch(
       suppressWarnings(
-        id_metastops(stops$result, stops$min_hours, stops$proximity, dateline = bbox$crosses_dl)
+        id_metastops(stops$result, stops$min_hours, stops$proximity, dateline = crosses_dl)
       ),
       error = function(cnd) {
         mutate_empty_metastops(stops$result)
@@ -143,7 +145,7 @@ server <- function(input, output, session) {
   
   # Create the initial base map...
   output$map <- renderLeaflet({
-    create_basemap(bbox$bbox)
+    create_basemap(bbox)
   })
   
   # Update map on time range change, change in segmentation data results,
@@ -159,7 +161,7 @@ server <- function(input, output, session) {
     filt_map_data <- req(filt_data())
 
     filt_map_data <- filt_map_data |> 
-      mutate(longitude_adj = get_elon(longitude, dateline = bbox$crosses_dl))
+      mutate(longitude_adj = get_elon(longitude, dateline = crosses_dl))
     
     # Clear existing animals using non-filtered data. Filtered data will no
     # longer contain these animal IDs and they will stick to the map instead of
