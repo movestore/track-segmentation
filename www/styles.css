@@ -94,3 +94,50 @@
   width: 300px !important;
   text-align: left;
 }
+
+/* Markdown container */
+.markdown-body {
+  max-width: 800px;        /* Limit line width */
+  margin: 20px auto;       /* Center content with vertical margin */
+  padding: 0 15px;         /* Horizontal padding */
+  font-family: sans-serif;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* Headings */
+.markdown-body h1, 
+.markdown-body h2, 
+.markdown-body h3, 
+.markdown-body h4 {
+  margin-top: 0.6em;
+  font-weight: 600;
+  color: #444;
+}
+
+/* Inline code */
+.markdown-body code {
+  background-color: #f0f0f0;
+  border-radius: 3px;
+  padding: 2px 4px;
+  color: #022658;
+  border-radius: 5px;
+}
+
+/* Tables */
+.markdown-body table {
+  border-collapse: collapse;
+  width: 50%;
+  margin: 1em auto 1em auto;
+}
+
+.markdown-body table th, 
+.markdown-body table td {
+  border: 1px solid #ccc;
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.markdown-body table th {
+  background-color: #f5f5f5;
+}

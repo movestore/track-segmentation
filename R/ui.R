@@ -58,6 +58,10 @@ seg_ui <- function(min_hours, proximity, start, end, step, init_dl) {
           uiOutput("data_contents"),
           uiOutput("data_overlay")
         )
+      ),
+      tabPanel(
+        "App Details",
+        div(class = "markdown-body", includeHTML("app_info.html"))
       )
     )
   )

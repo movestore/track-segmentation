@@ -1,0 +1,154 @@
+---
+title: "Track Segmentation: Stops and Movements"
+author:
+  - David C. Douglas, USGS
+  - Adapted by Finn Roberts, Max Planck Institute for Animal Behavior
+output: html_fragment
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Track Segmentation: Stops and Movements
+
+This app segments time series of location data for individual animals
+into sequential periods of stops and movements. The algorithm identifies
+stops based on two user-defined thresholds:
+
+1.  a distance threshold (`proximity`) that defines the upper limit of
+    spatial displacement permissible while occupying a stop.
+2.  a duration threshold (`min_hours`) that defines the minimum amount
+    of time a stop is required to persist.
+
+Both of these inputs can be modified by the user in the "Segmentation
+Parameters" panel of the app.
+
+Values for `proximity` and `min_hours` should be chosen in a manner that
+targets animal behavior(s) of interest while also accommodating the
+spatial accuracy and temporal frequency of the location data under
+analysis. Locations not classified as stops are classified as movements.
+
+## Segmentation algorithm
+
+### Part 1: Identifying stops
+
+Using the "Segmentation Parameters" panel of the app, the user defines
+two thresholds for track segmentation:
+
+-   a maximum allowable pairwise distance (`proximity`) among all
+    locations that constitute a single stop (in meters).
+-   a minimum required duration (`min_hours`) that a stop must persist
+    (in hours).
+
+The algorithm steps chronologically through each animal's tracking time
+series and identifies sequences of locations (i.e., periods of time)
+when the animal was stopped (or conversely, not stopped). Locations that
+constitute a **stop** are defined as those that:
+
+1.  are all within `proximity` from one another (i.e., distances between
+    all pairwise locations will be less than `proximity`).
+2.  have an elapsed time between the first and last location that is
+    greater than `min_hours`.
+
+It follows that stops must consist of at least two distinct locations.
+
+The algorithm begins with the first location for a given animal (the anchor 
+location) and calculates the distance and elapsed time to the next location. If
+the distance is greater than `proximity` no stop is detected and the
+procedure repeats with the next location as the anchor.
+
+If the distance is less than `proximity` and the elapsed time is less
+than `min_hours` then a “potential stop” is detected and the next
+location is considered. If all three pairwise distances between the
+three locations are less than `proximity` but the elapsed time from the
+first to the third location is still less than `min_hours`, then the
+stop remains “potential” and the next location is considered. Locations
+are sequentially added to the “potential” stop until **either**:
+
+1.  all pairwise distances among the locations are less than `proximity`
+    and the elapsed time from the first to the last location is greater
+    than `min_hours`. In this case a stop is detected. The stop will
+    include all locations from the anchor location to the final location
+    that did not exceed the `proximity` threshold. The location that
+    exceeded the threshold then becomes the new anchor location, and the
+    algorithm continues.
+2.  one or more pairwise distances are greater than `proximity`. In this
+    case no stop is detected. The location that exceeded the threshold
+    becomes the new anchor location, and the algorithm continues.
+
+After all locations for a given animal have been processed, a single
+location for each detected stop is calculated as a weighted average of
+the respective stop’s locations. The weighting gives strong emphasis on
+GPS locations, followed by emphasis on higher quality Argos locations
+compared to lower quality Argos locations. Argos location quality is
+contained in the location class variable. Non-Argos location data are recorded
+with a location class of "G". The weight associated with each class are 
+summarized in the following table:
+
+| Argos location class    | Weight |
+|-------------------------|--------|
+| 4                       | 5000   |
+| 3                       | 1000   |
+| 2                       | 500    |
+| 1                       | 300    |
+| 0                       | 50     |
+| A                       | 100    |
+| B                       | 10     |
+| Z                       | 5      |
+| G (Non-Argos locations) | 5000   |
+
+These derived stop locations are assigned a timestamp equivalent to the
+respective stop’s initial (anchor) tracking location. Note that “stop
+locations” are derived averages of the tracking location data (i.e.,
+they are *not* observed data).
+
+### Part 2: Identifying metastops
+
+A **metastop** consists of one or more chronologically sequential stops
+in which all pairwise distances between the stop locations are less than
+`proximity`.
+
+To identify metastops, the algorithm runs the same procedure as
+described in part 1, but uses the *derived stop locations* (and
+timestamps) as the inputs to the algorithm instead of the raw location
+data.
+
+Depending on the provided `proximity` and `min_hours` thresholds and the
+precision of the location data (which affects the weighted location
+averaging), consecutive discrete stops can be less than `proximity`
+meters apart. By identifying metastops, the segmentation algorithm combines 
+information from adjacent stops while also preserving the identity of 
+each unique stop.
+
+Unlike stop locations, metastops may consist of only one stop, in which
+case the metastop and the single stop share the same attributes. This
+ensures that when considered in full, the metastop results comprehensively 
+include all identified stops. When a metastop comprises more than
+one stop, the location of the
+stop with the longest duration (i.e., where the animal spent the most
+time) is used as the recorded metastop location. The timestamp of the
+earliest stop in the metastop is used as the metastop's recorded timestamp.
+
+## Output
+
+The app automatically produces a zip archive containing three CSV files
+containing the results of the segmentation algorithm for the most-recently
+run set of input parameters.
+
+-   The `stopovers_*` output file contains one record for each
+    identified stop.
+
+-   The `metaStops_*` output file contains one record for each metastop.
+
+-   The `locationsAnnotated_*` output file contains one record for each
+    input location annotated with a variable denoting the animal's
+    status at the respective place and time (either "Stopped",
+    "Movement", or "Movement during stop").
+
+The "Movement during stop" location type is assigned to consecutive
+movement locations that begin and end at the same metastop.
+
+A summary of the identified stops and metastops is contained in the
+app's "Data" tab. These tables correspond to the `stopovers_*` and
+`metaStops_*` output files, with some detail (e.g., digits) removed for
+legibility.
