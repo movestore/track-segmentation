@@ -33,7 +33,10 @@ create_basemap <- function(bbox) {
       colors = legend_colors(),
       labels = legend_labels(),
       title = "Location Type"
-    )
+    ) |> 
+    addMapPane("metastops", zIndex = 400) |>
+    addMapPane("movement", zIndex = 420) |> 
+    addMapPane("stops", zIndex = 450)
 }
 
 # Adjust bbox to cross/not cross dateline depending on current crossing status
@@ -150,31 +153,50 @@ addTrackLocationMarkers <- function(map, data) {
 }
 
 addTrackStopMarkers <- function(map, data) {
-  pal <- stopover_pal()
-  
   for (animal in unique(data$animal_id)) {
+    data_animal <- data[data$animal_id == animal, ]
+    
+    data_meta <- filter(data_animal, locType == "Metastop")
+    data_stop <- filter(data_animal, locType == "Stopped")
+    data_mvmt <- filter(data_animal, !locType %in% c("Metastop", "Stopped"))
+    
     map <- map |> 
-      addCircleMarkers(
-        data = data[data$animal_id == animal, ],
-        lng = ~longitude_adj,
-        lat = ~latitude,
-        color = ~pal(locType),
-        radius = ~myRadius,
-        fillOpacity = 0.8,
-        stroke = FALSE,
-        popup = ~paste(
-          bold("Animal:"), animal_id, "<br>",
-          bold("Time:"), timestamp, "<br>",
-          bold("Location Type:"), locType, "<br>",
-          bold("Location Class:"), lc, "<br>",
-          bold("Stop Days:"), stop_days, "<br>",
-          bold("N stops:"), n_stops, "<br>",
-          bold("Stop ID:"), stop_id, "<br>",
-          bold("Coordinates:"), round(latitude, 4), ",", round(longitude, 4)
-        ),
-        group = animal,
-        options = pathOptions(zIndexOffset = 200)
-      )
+      addTrackStopMarkersLayer(data_meta, group = animal, pane = "metastops") |> 
+      addTrackStopMarkersLayer(data_stop, group = animal, pane = "stops") |> 
+      addTrackStopMarkersLayer(data_mvmt, group = animal, pane = "movement")
+  }
+  
+  map
+}
+
+addTrackStopMarkersLayer <- function(map, 
+                                     data, 
+                                     group, 
+                                     pane, 
+                                     pal = stopover_pal()) {
+  if (nrow(data) > 0) {
+    map <- addCircleMarkers(
+      map, 
+      data = data,
+      lng = ~longitude_adj,
+      lat = ~latitude,
+      color = ~pal(locType),
+      radius = ~myRadius,
+      fillOpacity = 0.8,
+      stroke = FALSE,
+      popup = ~paste(
+        bold("Animal:"), animal_id, "<br>",
+        bold("Time:"), timestamp, "<br>",
+        bold("Location Type:"), locType, "<br>",
+        bold("Location Class:"), lc, "<br>",
+        bold("Stop Days:"), stop_days, "<br>",
+        bold("N stops:"), n_stops, "<br>",
+        bold("Stop ID:"), stop_id, "<br>",
+        bold("Coordinates:"), round(latitude, 4), ",", round(longitude, 4)
+      ),
+      group = group,
+      options = pathOptions(pane = pane)
+    )
   }
   
   map
