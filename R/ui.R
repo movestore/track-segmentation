@@ -1,5 +1,5 @@
 # Assemble the app UI
-seg_ui <- function(min_hours, proximity, start, end, step, init_dl) {
+seg_ui <- function(min_hours, proximity, start, end, step) {
   tagList(
     shinyjs::useShinyjs(), # For dynamic styling of segmentation action button
     
@@ -28,8 +28,7 @@ seg_ui <- function(min_hours, proximity, start, end, step, init_dl) {
           min_hours = min_hours, 
           start = start, 
           end = end, 
-          step = step, 
-          init_dl = init_dl
+          step = step
         ),
         leafletOutput("map", height = "calc(100vh - 50px)")
       ),
