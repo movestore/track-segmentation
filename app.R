@@ -79,7 +79,7 @@ server <- function(input, output, session) {
     }
   })
 
-  stop_locations <- eventReactive(input$recalc, {
+  stop_locations <- reactive({
     stops <- tryCatch(
       suppressWarnings(
         find_stop_locations(
@@ -100,7 +100,9 @@ server <- function(input, output, session) {
       min_hours = isolate(input$min_hours),
       proximity = isolate(input$proximity)
     )
-  })
+  }) |>
+    bindCache("stop", input$min_hours, input$proximity) |>
+    bindEvent(input$recalc)
 
   metastop_locations <- eventReactive(stop_locations(), {
     stops <- stop_locations()
