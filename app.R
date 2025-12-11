@@ -6,11 +6,9 @@ library(leaflet.extras)
 library(shinyBS)
 
 source("R/ui.R")
-source("R/server.R")
 source("R/segmentation.R")
 source("R/output.R")
 source("R/map.R")
-source("R/server.R")
 
 # This redirects output to tempdir for dev purposes
 # TODO: after adapting to MoveApps framework, output location should be
