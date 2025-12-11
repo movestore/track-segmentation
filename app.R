@@ -49,15 +49,14 @@ server <- function(input, output, session) {
   has_stops <- reactiveVal(FALSE)
   has_metastops <- reactiveVal(FALSE)
   results_zip <- reactiveVal(NULL)
-  map_data <- reactiveVal(list(type = "init", data = data))
+  is_map_init <- reactiveVal(TRUE)
+  cur_map_data <- reactiveVal(data)
   map_trigger <- reactiveVal(0)
   button_invalid <- reactiveVal(TRUE)
 
-  filt_data <- reactive({
-    d <- req(map_data()$data)
-    
+  filt_map_data <- reactive({
     dplyr::filter(
-      d, 
+      req(cur_map_data()), 
       timestamp >= input$timeRange[1], 
       timestamp <= input$timeRange[2]
     )
@@ -117,8 +116,8 @@ server <- function(input, output, session) {
     
     has_metastops(TRUE)
     button_invalid(FALSE)
-    map_data(list(type = "processed", data = data_for_leaflet(metastops)))
-    
+    is_map_init(FALSE)
+    cur_map_data(data_for_leaflet(metastops))
     map_trigger(map_trigger() + 1)
     
     metastops
@@ -158,27 +157,26 @@ server <- function(input, output, session) {
     # we need more control over temporal ordering of processing steps)
     map_trigger()
     
-    d <- req(map_data())
-    filt_map_data <- req(filt_data())
+    d <- req(filt_map_data())
 
-    filt_map_data <- filt_map_data |> 
+    d <- d |> 
       mutate(longitude_adj = get_elon(longitude, dateline = crosses_dl))
     
     # Clear existing animals using non-filtered data. Filtered data will no
     # longer contain these animal IDs and they will stick to the map instead of
     # disappearing
     map <- leafletProxy("map") |> 
-      clearGroup(group = unique(d$data$animal_id)) |>
-      addTrackLayersControl(filt_map_data) |> # Add layer selection panels
-      addTrackLines(filt_map_data) # Add track lines
+      clearGroup(group = unique(data$animal_id)) |>
+      addTrackLayersControl(d) |> # Add layer selection panels
+      addTrackLines(d) # Add track lines
     
     # Initial data do not have all necessary attributes for coloring in the same
     # way as processed data. After the first time stops are calculated, we can
     # render with the stop/metastop styling
-    if (d$type == "init") {
-      map <- addTrackLocationMarkers(map, filt_map_data)
+    if (is_map_init()) {
+      map <- addTrackLocationMarkers(map, d)
     } else {
-      map <- addTrackStopMarkers(map, filt_map_data)
+      map <- addTrackStopMarkers(map, d)
     }
     
     shinybusy::remove_modal_spinner()
