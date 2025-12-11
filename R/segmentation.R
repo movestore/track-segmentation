@@ -1,13 +1,16 @@
-
 # General data prep to get a move2 object into the format currently expected
-# but the segmentation algorithm
+# by the segmentation algorithm. Algorithm expects a data frame with
+# `animal_id`, `timestamp`, `latitude`, `longitude` and `lc` columns, ordered
+# within `animal_id` and `timestamp`, in WGS84.
 move2_to_seg <- function(data) {
   if (sf::st_crs(data) != sf::st_crs("epsg:4326")) {
     data <- sf::st_transform(data, "epsg:4326")
   }
   
-  coords <- sf::st_coordinates(data) # likely could adapt code to use geometry col itself
+  coords <- sf::st_coordinates(data)
   
+  # Set hard-coded colnames for track id and timestamp column. These will be
+  # used to refer to these columns throughout the app.
   move2::mt_track_id(data) <- "animal_id"
   move2::mt_time(data) <- "timestamp"
   
@@ -22,17 +25,16 @@ move2_to_seg <- function(data) {
   }
   
   data <- data |> 
+    sf::st_drop_geometry() |> 
+    dplyr::as_tibble() |> # drop move2 class
     dplyr::mutate(
-      animal_id = as.character(animal_id), # Factor also works, so this may already be enforced by move2
+      animal_id = as.character(animal_id),
       latitude = coords[, 2],
       longitude = coords[, 1]
     ) |> 
     dplyr::select(animal_id, timestamp, latitude, longitude, lc) |> 
-    dplyr::arrange(move2::mt_track_id(data), move2::mt_time(data)) |> 
-    na.omit() |> 
-    tibble::as_tibble()
-  
-  data <- data |>
+    dplyr::arrange(animal_id, timestamp) |> 
+    na.omit() |>
     dplyr::group_by(animal_id) |>
     dplyr::filter(dplyr::n() >= 2) |> 
     dplyr::ungroup()
@@ -40,7 +42,7 @@ move2_to_seg <- function(data) {
   data
 }
 
-check_data_frame <- function(df) {
+check_seg_data <- function(df) {
   required_columns <- c("animal_id", "timestamp", "latitude", "longitude", "lc")
   
   # Check for presence of all required columns
@@ -55,7 +57,7 @@ check_data_frame <- function(df) {
   if (!is.numeric(df$latitude)) stop("latitude must be numeric.")
   if (!is.numeric(df$longitude)) stop("longitude must be numeric.")
   if (!is.character(df$lc)) stop("lc must be of type character.")
-
+  
   # Check value ranges
   if (any(df$latitude < -90 | df$latitude > 90, na.rm = TRUE)) {
     stop("latitude values must be between -90 and 90.")
@@ -65,18 +67,22 @@ check_data_frame <- function(df) {
   }
   
   # Check 'lc' values
-  valid_lc <- c("3", "2", "1", "0", "A", "B", "Z", "G")
+  valid_lc <- names(lc_weights())
+  
   if (!all(df$lc %in% valid_lc)) {
     invalid_lc <- unique(df$lc[!df$lc %in% valid_lc])
     stop(paste("Invalid lc values found:", paste(invalid_lc, collapse = ", ")))
   }
   
-  message("\nData frame passed all checks.")
-  return(TRUE)
+  df
 }
 
-find_periods_recursive <- function(df, start_idx, min_hours, max_days, proximity) {
-  if(length(start_idx) == 0) start_idx <- nrow(df)
+# Segmentation algorithm implementation for single track
+identify_stops_ <- function(df, start_idx, min_hours, max_days, proximity) {
+  if(length(start_idx) == 0) {
+    start_idx <- nrow(df)
+  }
+  
   if (start_idx >= nrow(df)) {
     return(NULL)
   }
@@ -85,22 +91,22 @@ find_periods_recursive <- function(df, start_idx, min_hours, max_days, proximity
   current_start <- start_idx
   
   while(current_start < nrow(df)) {
-    # Initialize variables for current period....
+    # Initialize variables for current period
     current_idx <- current_start
     valid_period <- FALSE
     
-    # Iterative replacement for check_next_point....
+    # Iterative replacement for check_next_point
     while(current_idx < nrow(df)) {
-      # Pre-calculate coordinates matrices for efficiency....
+      # Pre-calculate coordinates matrices for efficiency
       prev_coords <- matrix(c(df$longitude[current_start:current_idx],
                               df$latitude[current_start:current_idx]), ncol = 2)
       next_coords <- matrix(c(df$longitude[current_idx + 1],
                               df$latitude[current_idx + 1]), ncol = 2)
       
-      # Calculate distances....
+      # Calculate distances
       distances <- geosphere::distHaversine(prev_coords, next_coords)
       
-      # Check if all distances are within threshold....
+      # Check if all distances are within threshold
       if (all(distances < proximity)) {
         time_diff <- as.numeric(difftime(df$timestamp[current_idx + 1],
                                          df$timestamp[current_start],
@@ -114,7 +120,7 @@ find_periods_recursive <- function(df, start_idx, min_hours, max_days, proximity
       break
     }
     
-    # Check if period is valid....
+    # Check if period is valid
     if (current_idx > current_start) {
       time_diff <- as.numeric(difftime(df$timestamp[current_idx],
                                        df$timestamp[current_start],
@@ -140,10 +146,10 @@ find_periods_recursive <- function(df, start_idx, min_hours, max_days, proximity
       }
     }
     
-    # Move to next potential period....
+    # Move to next potential period
     current_start <- current_idx + 1
     
-    # Add safety check to prevent infinite loops....
+    # Add safety check to prevent infinite loops
     if (current_start >= nrow(df) || current_idx >= nrow(df)) {
       break
     }
@@ -158,11 +164,11 @@ find_periods_recursive <- function(df, start_idx, min_hours, max_days, proximity
 }
 
 # Wrapper to find stops for all tracks in a move2 object and recombine output
-find_periods_move2 <- function(data, 
-                               start_idx, 
-                               min_hours,  
-                               proximity,
-                               max_days = 365000) {
+identify_stops <- function(data, 
+                           start_idx, 
+                           min_hours,  
+                           proximity,
+                           max_days = 365000) {
   dl <- data |> 
     dplyr::group_by(animal_id) |>
     dplyr::group_split()
@@ -171,7 +177,7 @@ find_periods_move2 <- function(data,
     lapply(
       dl,
       function(d) {
-        find_periods_recursive(
+        identify_stops_(
           d,
           start_idx = start_idx,
           min_hours = min_hours,
@@ -184,7 +190,6 @@ find_periods_move2 <- function(data,
   
   duration <- difftime(stops$end_time, stops$start_time, units = "secs")
   
-  # TODO: do we need both of these...? What are the most appropriate units?
   stops <- stops |>
     dplyr::mutate(
       stop_hours = as.numeric(duration / 3600),
@@ -200,17 +205,10 @@ find_periods_move2 <- function(data,
   stop_data
 }
 
-weighted_lon <- function(lon, weight) {
-  # Detect if longitudes cross 180 or 0....
-  lon_range <- range(lon, na.rm = TRUE)
-  
-  if ((lon_range[2] - lon_range[1]) > 180) {
-    # If longitude range is > 180, assume crossing the 180 dateline...
-    elon <- ifelse(lon < 0, lon + 360, lon)
-  } else {
-    # Otherwise, use the standard [-180, 180] range for Greenwich crossing
-    elon <- ifelse(lon > 180, lon - 360, lon)
-  }
+# Calculate weighted longitude
+weighted_lon <- function(lon, weight, dateline = FALSE) {
+  # CHECK: is this sufficient replacement for previous dateline heuristic used here?
+  elon <- get_elon(lon, dateline = dateline)
   
   elon_rad <- elon * pi / 180
   
@@ -229,13 +227,20 @@ weighted_lon <- function(lon, weight) {
   stopover_lon
 }
 
+# Calculate weighted latitude
 weighted_lat <- function(lat, weight) {
   weighted.mean(lat, weight)
 }
 
+# Prepare output of initial stops segmentation for metastops identification
+# To identify metastops, we want to run only stop locations back through
+# the segmentation algorithm, so we remove non-stop locations, reset
+# the lat/lon locations to the weighted stop locations, and expand the 
+# data long-wise to include individual stop records for the start and end
+# of each stop, as these will be used to determine metastop duration.
 stops_to_metastops <- function(data) {
   stops <- data |> 
-    dplyr::filter(stopover == 1) |> 
+    dplyr::filter(stopover == 1) |> # Select only stopovers
     rename(latitude = stopover_lat, longitude = stopover_lon)
   
   d1 <- stops |> 
@@ -245,23 +250,27 @@ stops_to_metastops <- function(data) {
     mutate(timestamp = end_time)
   
   rbind(d1, d2) |> 
-    dplyr::select(animal_id,
-                  timestamp,
-                  latitude,
-                  longitude,
-                  n_locs) |> 
+    dplyr::select(
+      animal_id,
+      timestamp,
+      latitude,
+      longitude,
+      n_locs
+    ) |> 
     na.omit() |>
     arrange(animal_id, timestamp) |>
     group_by(animal_id) |>
     filter(n() >= 2)
 }
 
+# Wrapper to augment output of metastop segmentation results with number of
+# stop locations and reorganize data frame for output
 get_metastop_stats <- function(data) {
   stops <- data |> 
     filter(!is.na(metastop_id)) |> 
     group_by(metastop_id) |> 
     mutate(n_meta = dplyr::n() / 2) |> 
-    filter(n_locs == max(n_locs)) |> # TODO confirm this is fastre than arrange() and filter by row number
+    filter(n_locs == max(n_locs)) |> # TODO confirm this is faster than arrange() and filter by row number
     filter(timestamp == min(timestamp)) |> 
     mutate(
       gis_lat = latitude, 
@@ -307,16 +316,18 @@ tidy_metastop_data <- function(data, dateline = FALSE) {
     group_by(metastop_id) |> 
     filter(row_number() == 1) |> 
     ungroup() |> 
-    mutate(stopover = 3, 
-           stop_id = metastop_id, 
-           gis_lat = meta_lat, 
-           gis_lon = meta_lon,
-           stop_hours = metastop_hours, 
-           stop_days = metastop_days,
-           n_locs = n_meta, 
-           timestamp = metastart_time,
-           start_time = metastart_time, 
-           end_time = metaend_time) |>
+    mutate(
+      stopover = 3, 
+      stop_id = metastop_id, 
+      gis_lat = meta_lat, 
+      gis_lon = meta_lon,
+      stop_hours = metastop_hours, 
+      stop_days = metastop_days,
+      n_locs = n_meta, 
+      timestamp = metastart_time,
+      start_time = metastart_time, 
+      end_time = metaend_time
+    ) |>
     dplyr::select(
       -n_meta,
       -metastart_time,
@@ -344,7 +355,7 @@ tidy_metastop_data <- function(data, dateline = FALSE) {
     arrange(animal_id, timestamp) |> 
     mutate(
       stopover = metastop + stopover,
-      gis_elon = get_elon(gis_lon, dateline)
+      gis_elon = get_elon(gis_lon, dateline) # May not be needed if we do this on the fly, unless needed for output...
     ) |> 
     filter(stopover != 11) |> 
     mutate(
@@ -374,6 +385,8 @@ tidy_metastop_data <- function(data, dateline = FALSE) {
     mutate(locType = stopover_to_label(stopover))
 }
 
+# Prepare data for leaflet map by using GIS lat/lon where necessary
+# and building aesthetic variables.
 data_for_leaflet <- function(data) {
   data <- data |> 
     mutate(
@@ -387,18 +400,19 @@ data_for_leaflet <- function(data) {
     dplyr::select(animal_id, timestamp, latitude, longitude, lc, stop_days, locType, myRadius, stop_id, n_stops) |>
     ungroup()
   
-  # Validate and filter coordinates...
+  # Validate and filter coordinates
   data <- data |> 
     filter(latitude >= -90 & latitude <= 90) |> 
     filter(longitude >= -180 & longitude <= 360)
   
-  # Sort by animal_id and timestamp...
+  # Sort by animal_id and timestamp
   data <- data |> 
     arrange(animal_id, timestamp)
   
   data
 }
 
+# Helpers to recode vectors based on a key/value dictionary
 lc_recode <- function(x) {
   key_recode(x, lc_weights(), 1)
 }
@@ -411,6 +425,8 @@ stopover_to_label <- function(x) {
   key_recode(x, stopover_labels(), "Unclassified")
 }
 
+# Key/value dictionaries containing mappings between recodes for relevant
+# variables
 lc_weights <- function() {
   c(
     "G" = 5000,
@@ -455,6 +471,8 @@ has_argos_lc <- function(data) {
   "argos_lc" %in% colnames(data)
 }
 
+# Handle dateline crossing. When tracks cross the dateline, update
+# longitude values accordingly to wrap the dateline.
 get_elon <- function(lon, dateline = FALSE) {
   if (dateline) {
     ifelse(lon < 0, lon + 360, lon)

@@ -1,4 +1,4 @@
-
+# Reformat stop results data for display and output CSV file
 prep_stops_output <- function(data) {
   if (nrow(data) == 0) {
     return(tibble::tibble())
@@ -21,7 +21,7 @@ prep_stops_output <- function(data) {
     na.omit()
 }
 
-# ready4 input
+# Reformat metastop results data for display and output CSV file
 prep_metastops_output <- function(data) {
   if (nrow(data) == 0) {
     return(tibble::tibble())
@@ -41,6 +41,11 @@ prep_metastops_output <- function(data) {
     )
 }
 
+# Reformat location results data for output CSV file. data1 should be
+# the results of the metastops segmentation process. data2 should be the
+# metastops data already prepared for output. Both arguments are exposed
+# to prevent need to prep metastops output twice. They will be rejoined
+# to link metastops to transit locations
 prep_location_output <- function(data1, data2) {
   if (nrow(data1) == 0 || nrow(data2) == 0) {
     return(tibble::tibble())
@@ -50,11 +55,13 @@ prep_location_output <- function(data1, data2) {
     mutate(metastart_time = start_time, metaend_time = end_time) |> 
     select(animal_id, n_stops, metastart_time, metaend_time, meta_stop_id)
   
+  # Get non-metastop locations and join back on metastops results to link
+  # original transit locations to associated metastops
   newLocData <- data1 |> 
     filter(stopover != 13) |> 
     left_join(
       temp1, 
-      join_by(animal_id, timestamp >= metastart_time,timestamp <= metaend_time)
+      join_by(animal_id, timestamp >= metastart_time, timestamp <= metaend_time)
     ) |> 
     select(
       animal_id, 
@@ -85,6 +92,7 @@ out_file_name <- function(prefix,
   )
 }
 
+# Write a zip file containing stops, metastops, and transit location output
 write_results <- function(stops,
                           metastops,
                           proximity,
@@ -146,14 +154,8 @@ app_version <- function() {
   "014"
 }
 
-sanitize_studyName <- function(studyName) {
-  # Invalid Windows filename characters...
-  invalid_chars <- "[<>:\"/\\\\|?*]"
-  # Replace invalid characters with an underscore...
-  cleaned_studyName <- gsub(invalid_chars, "_", studyName)
-  return(cleaned_studyName)
-}
-
+# Improve formatting for output tables in app Data tab to make tables more
+# legible. Doesn't affect written output tables.
 prettify <- function(data, digits = 3) {
   dplyr::mutate(
     data,

@@ -11,7 +11,7 @@ source("R/segmentation.R")
 source("R/output.R")
 source("R/map.R")
 source("R/server.R")
-# options(shiny.fullstacktrace = TRUE)
+
 # This redirects output to tempdir for dev purposes
 # TODO: after adapting to MoveApps framework, output location should be 
 # handled by .env instead
@@ -22,15 +22,12 @@ Sys.setenv("APP_ARTIFACTS_DIR" = tempdir())
 # data_raw <- move2::movebank_download_study(study_id = 438644854, sensor_type_id = "argos-doppler-shift")
 # data_raw <- move2::movebank_download_study(study_id = 1718959411, sensor_type = "argos")
 
-# Use sf to identify whether IDL is crossed
+# Convert from move2 to anticipated segmentation data format
+data <- check_seg_data(move2_to_seg(data_raw))
+
+# Use sf to identify whether IDL is crossed and build appropriate basemap bbox
 crosses_dl <- move2_crosses_dateline(data_raw)
-data <- move2_to_seg(data_raw)
 bbox <- get_init_bbox(data, crosses_dl)
-
-time_range_start <- as.POSIXct(min(data$timestamp))
-time_range_end   <- as.POSIXct(max(data$timestamp))
-
-# check_data_frame(data)
 
 # ------------------------------------------------------------------------------
 
@@ -38,10 +35,9 @@ ui <- fluidPage(
   seg_ui(
     min_hours = 6, 
     proximity = 150, 
-    start = time_range_start, 
-    end = time_range_end, 
-    step = 86400, 
-    init_dl = crosses_dl
+    start = as.POSIXct(min(data$timestamp)), 
+    end = as.POSIXct(max(data$timestamp)), 
+    step = 86400
   )
 )
 
@@ -57,8 +53,8 @@ server <- function(input, output, session) {
   filt_map_data <- reactive({
     dplyr::filter(
       req(cur_map_data()), 
-      timestamp >= input$timeRange[1], 
-      timestamp <= input$timeRange[2]
+      timestamp >= input$time_range[1], 
+      timestamp <= input$time_range[2]
     )
   })
   
@@ -83,10 +79,15 @@ server <- function(input, output, session) {
     }
   })
   
-  find_stops <- eventReactive(input$recalc, {
+  stop_locations <- eventReactive(input$recalc, {
     stops <- tryCatch(
       suppressWarnings(
-        id_stops(data, input$min_hours, input$proximity, dateline = crosses_dl)
+        find_stop_locations(
+          data, 
+          min_hours = input$min_hours, 
+          proximity = input$proximity, 
+          dateline = crosses_dl
+        )
       ),
       error = function(cnd) {
         mutate_empty_stops(data, dateline = crosses_dl)
@@ -102,12 +103,17 @@ server <- function(input, output, session) {
     )
   })
   
-  find_metastops <- eventReactive(find_stops(), {
-    stops <- find_stops()
+  metastop_locations <- eventReactive(stop_locations(), {
+    stops <- stop_locations()
     
     metastops <- tryCatch(
       suppressWarnings(
-        id_metastops(stops$result, stops$min_hours, stops$proximity, dateline = crosses_dl)
+        find_metastop_locations(
+          stops$result, 
+          min_hours = stops$min_hours, 
+          proximity = stops$proximity, 
+          dateline = crosses_dl
+        )
       ),
       error = function(cnd) {
         mutate_empty_metastops(stops$result)
@@ -123,9 +129,9 @@ server <- function(input, output, session) {
     metastops
   })
   
-  observeEvent(find_metastops(), {
-    stops <- find_stops()
-    metastops <- find_metastops()
+  observeEvent(metastop_locations(), {
+    stops <- stop_locations()
+    metastops <- metastop_locations()
     
     # Remove existing results zip if it exists
     if (!is.null(results_zip())) {
@@ -143,7 +149,7 @@ server <- function(input, output, session) {
     results_zip(f_out)
   })
   
-  # Create the initial base map...
+  # Create the initial base map
   output$map <- renderLeaflet({
     create_basemap(bbox)
   })
@@ -202,24 +208,24 @@ server <- function(input, output, session) {
   })
   
   output$stop_data <- DT::renderDataTable({
-    d <- req(find_stops()$result)
+    d <- req(stop_locations()$result)
     
     d <- dplyr::filter(
       d, 
-      timestamp >= input$timeRange[1], 
-      timestamp <= input$timeRange[2]
+      timestamp >= input$time_range[1], 
+      timestamp <= input$time_range[2]
     )
     
     prettify(prep_stops_output(d))
   })
   
   output$metastop_data <- DT::renderDataTable({
-    d <- req(find_metastops())
+    d <- req(metastop_locations())
     
     d <- dplyr::filter(
       d, 
-      timestamp >= input$timeRange[1], 
-      timestamp <= input$timeRange[2]
+      timestamp >= input$time_range[1], 
+      timestamp <= input$time_range[2]
     )
     
     prettify(prep_metastops_output(d))

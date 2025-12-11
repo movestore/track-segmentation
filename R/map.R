@@ -1,3 +1,5 @@
+# Build basemap centered on track bbox with relevant overlay groups and other
+# widgets
 create_basemap <- function(bbox) {
   leaflet(options = leafletOptions(preferCanvas = TRUE)) |>
     addTiles(group = "OpenStreetMap") |>
@@ -40,11 +42,12 @@ create_basemap <- function(bbox) {
 }
 
 # Intersect a set of LINESTRINGS with the international dateline to determine
-# if tracks automatically cross or not
+# if tracks cross the dateline or not
 st_crosses_dateline <- function(data) {
   any(sf::st_intersects(data, sfc_idl(), sparse = FALSE))
 }
 
+# International dateline sfc object (fixed at 180 degree meridian)
 sfc_idl <- function() {
   idl_coords <- matrix(c(180, -90, 180, 90), nrow = 2, byrow = TRUE)
   
@@ -54,8 +57,9 @@ sfc_idl <- function() {
   )
 }
 
-# Initial bbox for input data. Determine whether the data cross the dateline
-# for correct map initialization.
+# Determine whether any tracks in an input move2 object cross the
+# international dateline. Groups by track id, casts track points to LINESTRING,
+# and intersects with dateline
 move2_crosses_dateline <- function(data) {
   data |> 
     dplyr::group_by(move2::mt_track_id(data)) |> 
@@ -68,6 +72,8 @@ move2_crosses_dateline <- function(data) {
     st_crosses_dateline()
 }
 
+# Get an initial bounding box for the input segmentation data based on
+# whether tracks cross the dateline or not
 get_init_bbox <- function(data, dateline) {
   elon_range <- range(get_elon(data$longitude, dateline))
   lat_range  <- range(data$latitude)
@@ -84,12 +90,12 @@ get_init_bbox <- function(data, dateline) {
   bbox
 }
 
+# Wrapper to add linestrings connecting track points as a map layer
 addTrackLines <- function(map, data) {
   animals <- unique(data$animal_id)
   
   # Add animal IDs as overlay groups
   map <- map |>
-    clearGroup(group = animals) |>
     addLayersControl(
       baseGroups = c("Satellite", "OpenStreetMap"),
       overlayGroups = animals,
@@ -113,6 +119,10 @@ addTrackLines <- function(map, data) {
   map
 }
 
+# Wrapper to add circle markers with indicated aesthetics for initial 
+# unclassified input data. That is, this plots raw location points
+# on the map. Used in map initialization to ensure that track locations are
+# visible before stops have been identified.
 addTrackLocationMarkers <- function(map, data) {
   for (animal in unique(data$animal_id)) {
     map <- map |> 
@@ -140,6 +150,7 @@ addTrackLocationMarkers <- function(map, data) {
   map
 }
 
+# Wrapper to add segmentation result markers with specified z-index layering
 addTrackStopMarkers <- function(map, data) {
   for (animal in unique(data$animal_id)) {
     data_animal <- data[data$animal_id == animal, ]
@@ -157,11 +168,14 @@ addTrackStopMarkers <- function(map, data) {
   map
 }
 
+# Wrapper to add segmentation result markers with specified aesthetics
 addTrackStopMarkersLayer <- function(map, 
                                      data, 
                                      group, 
                                      pane, 
                                      pal = stopover_pal()) {
+  # Check nrow to handle possibility that certain stop types were not identified
+  # with the given input parameters
   if (nrow(data) > 0) {
     map <- addCircleMarkers(
       map, 
@@ -190,12 +204,11 @@ addTrackStopMarkersLayer <- function(map,
   map
 }
 
+# Add animal IDs as overlay groups
 addTrackLayersControl <- function(map, data) {
   animals <- unique(data$animal_id)
   
-  # Add animal IDs as overlay groups
   map <- map |>
-    # clearGroup(group = animals) |>
     addLayersControl(
       baseGroups = c("Satellite", "OpenStreetMap"),
       overlayGroups = animals,
@@ -205,6 +218,7 @@ addTrackLayersControl <- function(map, data) {
   map
 }
 
+# Add custom legend based on the given color palette
 addTrackLegend <- function(map, colors, labels, title = "", ...) {
   map |> 
     addControl(
@@ -214,6 +228,10 @@ addTrackLegend <- function(map, colors, labels, title = "", ...) {
     )
 }
 
+# Build custom HTML legend for the given location type classes
+# Use custom legend to add an additional class for "unclassified" points
+# which will be present on map initialization (before segmentation has run).
+# Also adds classes to facilitate custom CSS styling.
 track_legend <- function(colors, labels, title = "") {
   stopifnot(length(colors) == length(labels))
   
@@ -234,6 +252,7 @@ track_legend <- function(colors, labels, title = "") {
   HTML(html)
 }
 
+# Build a single legend item for a given color and label
 legend_item <- function(color, label, class = NULL) {
   classes <- paste0(c("legend-circle", class), collapse = " ")
   
@@ -243,20 +262,17 @@ legend_item <- function(color, label, class = NULL) {
   )
 }
 
-stopover_pal <- function(colors = lc_colors()) {
+# Helpers to build palette for segmented location classes
+stopover_pal <- function(colors = legend_colors()) {
   leaflet::colorFactor(colors, unique(stopover_labels()), levels = unique(stopover_labels()))
 }
 
 legend_colors <- function() {
-  lc_colors()
+  c("#e31a1c", "#ffde05", "#00f6d0", "#1133f5")
 }
 
 legend_labels <- function() {
   unique(stopover_labels())
-}
-
-lc_colors <- function() {
-  c("#e31a1c", "#ffde05", "#00f6d0", "#1133f5")
 }
 
 unclassified_color <- function() {
