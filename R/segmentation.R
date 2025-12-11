@@ -414,7 +414,7 @@ stopover_to_label <- function(x) {
 lc_weights <- function() {
   c(
     "G" = 5000,
-    "4" = 5000,
+    # "4" = 5000, # This is in original code, but is not listed as a valid LC val
     "3" = 1000,
     "2" = 500,
     "1" = 300,
