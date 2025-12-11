@@ -1,8 +1,5 @@
 ---
 title: "Track Segmentation: Stops and Movements"
-author:
-  - David C. Douglas, USGS
-  - Adapted by Finn Roberts, Max Planck Institute for Animal Behavior
 output: html_fragment
 editor_options: 
   markdown: 
@@ -10,6 +7,11 @@ editor_options:
 ---
 
 # Track Segmentation: Stops and Movements
+
+<div class="authorship">
+  <div class="author">David C. Douglas, <span class="affiliation">USGS</span></div>
+  <div class="author"><span>Adapted by </span> Finn Roberts, <span class="affiliation">Max Planck Institute for Animal Behavior</span></div>
+</div>
 
 This app segments time series of location data for individual animals
 into sequential periods of stops and movements. The algorithm identifies

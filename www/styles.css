@@ -119,6 +119,10 @@
   color: #444;
 }
 
+.markdown-body h1 {
+  text-align: center;
+}
+
 /* Inline code */
 .markdown-body code {
   background-color: #f0f0f0;
@@ -149,4 +153,24 @@
 .fa-circle-question {
   cursor: pointer;
   color: #999;
+}
+
+.authorship {
+  margin: 2em auto 1em auto;
+  color: #555;
+  font-size: 0.9em;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.authorship .author {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.2em;
+}
+
+.authorship .affiliation {
+  font-style: italic;
+  margin-bottom: 0.2em;
+  color: #555;
 }
