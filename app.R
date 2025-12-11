@@ -3,6 +3,7 @@ library(dplyr)
 library(tidyr)
 library(leaflet)
 library(leaflet.extras)
+library(shinyBS)
 
 source("R/ui.R")
 source("R/server.R")
@@ -197,7 +198,7 @@ server <- function(input, output, session) {
     if (!has_stops() || !has_metastops()) {
       div(
         class = "overlay",
-        "Run the analysis to view data in this tab."
+        "Run the segmentation algorithm to see results here."
       )
     }
   })

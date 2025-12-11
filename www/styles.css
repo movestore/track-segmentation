@@ -51,6 +51,10 @@
   margin: 15px -20px;
 }
 
+.slider-panel p {
+  color: #555;
+}
+
 .slider-panel {
   position: absolute;
   cursor: inherit;
@@ -140,4 +144,9 @@
 
 .markdown-body table th {
   background-color: #f5f5f5;
+}
+
+.fa-circle-question {
+  cursor: pointer;
+  color: #999;
 }

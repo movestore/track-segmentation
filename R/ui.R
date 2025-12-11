@@ -17,21 +17,22 @@ segmentation_panel <- function(proximity, min_hours, start, end, step, init_dl) 
     class = "slider-panel",
     id = "seg-panel",
     top = 54,
-    tags$h4("Segmentation Parameters"),
-    tags$p("Set the location distance and time used to identify stops."),
+    h4("Segmentation Parameters"),
+    p("Set the location distance and time used to identify stops."),
+    p("For more information, see the App Details tab."),
     numericInput(
       "proximity", 
-      "Maximum distance between stopped locations (meters)",
+      tags$span("Maximum distance between stopped locations (meters)", icon("question-circle", id = "proximity-info")),
       min = 0, 
       value = proximity
     ),
     numericInput(
       "min_hours", 
-      "Minimum stop time (hours)", 
+      tags$span("Minimum stop duration (hours)", icon("question-circle", id = "dur-info")),
       min = 0, 
       value = min_hours
     ),
-    actionButton("recalc", "Calculate stop locations"),
+    actionButton("recalc", "Identify stop locations"),
     tags$hr(),
     time_range_slider(start, end, step)
   )
@@ -40,8 +41,8 @@ segmentation_panel <- function(proximity, min_hours, start, end, step, init_dl) 
 seg_ui <- function(min_hours, proximity, start, end, step, init_dl) {
   tagList(
     shinyjs::useShinyjs(),
-    shinyBS::bsTooltip(id = "proximity", title = proximity_info(), placement = "right"),
-    shinyBS::bsTooltip(id = "min_hours", title = duration_info(), placement = "right"),
+    shinyBS::bsTooltip(id = "proximity-info", title = proximity_info(), placement = "right"),
+    shinyBS::bsTooltip(id = "dur-info", title = duration_info(), placement = "right"),
     includeCSS("www/styles.css"),
     tabsetPanel(
       tabPanel(
@@ -80,5 +81,11 @@ duration_info <- function() {
     "Set the minimum required duration that a stop must persist. ",
     "The elapsed time between the first and last locations in a given stop ",
     "will be greater than this value."
+  )
+}
+
+seg_info <- function() {
+  paste0(
+    "For more information on these parameters, see the App Details tab."
   )
 }
