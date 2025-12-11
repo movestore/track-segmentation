@@ -2,37 +2,37 @@
 seg_ui <- function(min_hours, proximity, start, end, step) {
   tagList(
     shinyjs::useShinyjs(), # For dynamic styling of segmentation action button
-    
+
     # For tooltips when hovering over segmentation parameters
     shinyBS::bsTooltip(
-      id = "proximity-info", 
-      title = proximity_info(), 
+      id = "proximity-info",
+      title = proximity_info(),
       placement = "right"
     ),
     shinyBS::bsTooltip(
-      id = "dur-info", 
-      title = duration_info(), 
+      id = "dur-info",
+      title = duration_info(),
       placement = "right"
     ),
-    
+
     # Styles
     includeCSS("www/styles.css"),
-    
+
     # Tabset panel containing map, data tables, and about tabs
     tabsetPanel(
       # Segmentation parameter inputs and map of results
       tabPanel(
         "Map",
         seg_panel(
-          proximity = proximity, 
-          min_hours = min_hours, 
-          start = start, 
-          end = end, 
+          proximity = proximity,
+          min_hours = min_hours,
+          start = start,
+          end = end,
           step = step
         ),
         leafletOutput("map", height = "calc(100vh - 50px)")
       ),
-      
+
       # Data tables for identified stop and metastop locations
       tabPanel(
         "Data",
@@ -43,7 +43,7 @@ seg_ui <- function(min_hours, proximity, start, end, step) {
           uiOutput("data_overlay") # Mask empty results before algorithm has run
         )
       ),
-      
+
       # Algorithm details. From HTML fragment created separately by app_info.Rmd
       tabPanel(
         "App Details",
@@ -92,21 +92,21 @@ seg_panel_header <- function() {
 
 proximity_input <- function(proximity) {
   numericInput(
-    "proximity", 
+    "proximity",
     span(
-      "Maximum distance between stopped locations (meters)", 
+      "Maximum distance between stopped locations (meters)",
       icon("question-circle", id = "proximity-info")
     ),
-    min = 0, 
+    min = 0,
     value = proximity
   )
 }
 
 duration_input <- function(min_hours) {
   numericInput(
-    "min_hours", 
+    "min_hours",
     span("Minimum stop duration (hours)", icon("question-circle", id = "dur-info")),
-    min = 0, 
+    min = 0,
     value = min_hours
   )
 }
