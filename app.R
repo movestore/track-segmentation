@@ -85,12 +85,11 @@ server <- function(input, output, session) {
         find_stop_locations(
           data,
           min_hours = input$min_hours,
-          proximity = input$proximity,
-          dateline = crosses_dl
+          proximity = input$proximity
         )
       ),
       error = function(cnd) {
-        mutate_empty_stops(data, dateline = crosses_dl)
+        mutate_empty_stops(data)
       }
     )
 
@@ -111,8 +110,7 @@ server <- function(input, output, session) {
         find_metastop_locations(
           stops$result,
           min_hours = stops$min_hours,
-          proximity = stops$proximity,
-          dateline = crosses_dl
+          proximity = stops$proximity
         )
       ),
       error = function(cnd) {
@@ -165,6 +163,7 @@ server <- function(input, output, session) {
 
     d <- req(filt_map_data())
 
+    # Handle dateline crossing longitude adjustment on the fly
     d <- d |>
       mutate(longitude_adj = get_elon(longitude, dateline = crosses_dl))
 

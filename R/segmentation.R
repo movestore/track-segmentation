@@ -83,7 +83,7 @@ check_seg_data <- function(df) {
 # their stop information, if any. It also calculates the weighted location of
 # each stop. Input data should be the raw seg data as produced by
 # `move2_to_seg()`
-find_stop_locations <- function(data, min_hours, proximity, dateline = FALSE) {
+find_stop_locations <- function(data, min_hours, proximity) {
   data2 <- identify_stops(
     data,
     start_idx = 1,
@@ -142,8 +142,7 @@ find_stop_locations <- function(data, min_hours, proximity, dateline = FALSE) {
     weighted_stopped_locs
   ) |>
     select(-w) |>
-    arrange(animal_id, timestamp) |>
-    mutate(gis_elon = get_elon(gis_lon, dateline))
+    arrange(animal_id, timestamp)
   
   stops_data
 }
@@ -155,7 +154,7 @@ find_stop_locations <- function(data, min_hours, proximity, dateline = FALSE) {
 # location data, but we want to re-run the algorithm only on the weighted
 # stop locations themselves, we must massage the data before passing back through
 # the algorithm. Input data should be the results of `find_stop_locations()`
-find_metastop_locations <- function(data, min_hours, proximity, dateline = FALSE) {
+find_metastop_locations <- function(data, min_hours, proximity) {
   # Select weighted stop locations and reformat data
   meta <- stops_to_metastops(data)
   
@@ -183,7 +182,7 @@ find_metastop_locations <- function(data, min_hours, proximity, dateline = FALSE
   ) |>
     mutate(metastop = replace_na(metastop, 0))
   
-  tidy_metastop_data(meta, dateline = dateline)
+  tidy_metastop_data(meta)
 }
 
 # Segmentation algorithm implementation for single track
@@ -431,10 +430,10 @@ get_metastop_stats <- function(data) {
     )
 }
 
-tidy_metastop_data <- function(data, dateline = FALSE) {
+tidy_metastop_data <- function(data) {
   metastops <- data |>
     filter(metastop == 10) |>
-    arrange(animal_id, metastart_time) |> # May not be necessary
+    arrange(animal_id, metastart_time) |>
     group_by(metastop_id) |>
     filter(row_number() == 1) |>
     ungroup() |>
@@ -475,10 +474,7 @@ tidy_metastop_data <- function(data, dateline = FALSE) {
 
   rbind(non_metastops, metastops) |>
     arrange(animal_id, timestamp) |>
-    mutate(
-      stopover = metastop + stopover,
-      gis_elon = get_elon(gis_lon, dateline) # May not be needed if we do this on the fly, unless needed for output...
-    ) |>
+    mutate(stopover = metastop + stopover) |>
     filter(stopover != 11) |>
     mutate(
       original_lat = ifelse(stopover == 13, NA, original_lat),
@@ -497,7 +493,6 @@ tidy_metastop_data <- function(data, dateline = FALSE) {
       original_lon,
       gis_lat,
       gis_lon,
-      gis_elon,
       n_locs,
       lc,
       -stop_hours,
@@ -541,7 +536,7 @@ data_for_leaflet <- function(data) {
 # We use these to instead augment the raw location data to force all locations
 # to be classified as movement locations. This prevents the app from crashing
 # while maintaining an intuitive output result.
-mutate_empty_stops <- function(data, dateline = FALSE) {
+mutate_empty_stops <- function(data) {
   data |>
     mutate(
       start_time = NA,
@@ -556,8 +551,7 @@ mutate_empty_stops <- function(data, dateline = FALSE) {
       gis_lon = longitude,
       stopover_lat = NA,
       stopover_lon = NA,
-      n_locs = NA,
-      gis_elon = get_elon(gis_lon, dateline)
+      n_locs = NA
     ) |>
     select(-latitude, -longitude)
 }
