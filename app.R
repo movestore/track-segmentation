@@ -1,5 +1,7 @@
 library(shiny)
 library(dplyr)
+library(sf)
+library(move2)
 library(tidyr)
 library(leaflet)
 library(leaflet.extras)
@@ -49,7 +51,7 @@ server <- function(input, output, session) {
   button_invalid <- reactiveVal(TRUE)
 
   filt_map_data <- reactive({
-    dplyr::filter(
+    filter(
       req(cur_map_data()),
       timestamp >= input$time_range[1],
       timestamp <= input$time_range[2]
@@ -208,7 +210,7 @@ server <- function(input, output, session) {
   output$stop_data <- DT::renderDataTable({
     d <- req(stop_locations()$result)
 
-    d <- dplyr::filter(
+    d <- filter(
       d,
       timestamp >= input$time_range[1],
       timestamp <= input$time_range[2]
@@ -220,7 +222,7 @@ server <- function(input, output, session) {
   output$metastop_data <- DT::renderDataTable({
     d <- req(metastop_locations())
 
-    d <- dplyr::filter(
+    d <- filter(
       d,
       timestamp >= input$time_range[1],
       timestamp <= input$time_range[2]

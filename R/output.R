@@ -5,10 +5,10 @@ prep_stops_output <- function(data) {
   }
 
   data |>
-    dplyr::filter(stopover == 1) |>
-    dplyr::rename(latitude = stopover_lat, longitude = stopover_lon) |>
-    dplyr::mutate(locType = "Stopover") |>
-    dplyr::select(
+    filter(stopover == 1) |>
+    rename(latitude = stopover_lat, longitude = stopover_lon) |>
+    mutate(locType = "Stopover") |>
+    select(
       animal_id,
       stop_id,
       start_time,
@@ -157,9 +157,9 @@ app_version <- function() {
 # Improve formatting for output tables in app Data tab to make tables more
 # legible. Doesn't affect written output tables.
 prettify <- function(data, digits = 3) {
-  dplyr::mutate(
+  mutate(
     data,
-    dplyr::across(dplyr::where(is.numeric), ~ round(.x, digits)),
-    dplyr::across(dplyr::where(~ inherits(.x, "POSIXct")), ~ format(.x, "%Y-%m-%d %H:%M:%S %Z"))
+    across(where(is.numeric), ~ round(.x, digits)),
+    across(where(~ inherits(.x, "POSIXct")), ~ format(.x, "%Y-%m-%d %H:%M:%S %Z"))
   )
 }

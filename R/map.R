@@ -44,15 +44,15 @@ create_basemap <- function(bbox) {
 # Intersect a set of LINESTRINGS with the international dateline to determine
 # if tracks cross the dateline or not
 st_crosses_dateline <- function(data) {
-  any(sf::st_intersects(data, sfc_idl(), sparse = FALSE))
+  any(st_intersects(data, sfc_idl(), sparse = FALSE))
 }
 
 # International dateline sfc object (fixed at 180 degree meridian)
 sfc_idl <- function() {
   idl_coords <- matrix(c(180, -90, 180, 90), nrow = 2, byrow = TRUE)
 
-  sf::st_sfc(
-    sf::st_linestring(idl_coords),
+  st_sfc(
+    st_linestring(idl_coords),
     crs = 4326
   )
 }
@@ -62,13 +62,13 @@ sfc_idl <- function() {
 # and intersects with dateline
 move2_crosses_dateline <- function(data) {
   data |>
-    dplyr::group_by(move2::mt_track_id(data)) |>
-    dplyr::summarize(
+    group_by(move2::mt_track_id(data)) |>
+    summarize(
       n = n(),
-      geometry = sf::st_combine(geometry)
+      geometry = st_combine(geometry)
     ) |>
-    dplyr::filter(n > 1) |> # Can't build linestring from single point
-    sf::st_cast("LINESTRING") |>
+    filter(n > 1) |> # Can't build linestring from single point
+    st_cast("LINESTRING") |>
     st_crosses_dateline()
 }
 
@@ -78,7 +78,7 @@ get_init_bbox <- function(data, dateline) {
   elon_range <- range(get_elon(data$longitude, dateline))
   lat_range <- range(data$latitude)
 
-  bbox <- sf::st_bbox(
+  bbox <- st_bbox(
     c(
       xmin = min(elon_range),
       ymin = min(lat_range),
@@ -264,7 +264,7 @@ legend_item <- function(color, label, class = NULL) {
 
 # Helpers to build palette for segmented location classes
 stopover_pal <- function(colors = legend_colors()) {
-  leaflet::colorFactor(colors, unique(stopover_labels()), levels = unique(stopover_labels()))
+  colorFactor(colors, unique(stopover_labels()), levels = unique(stopover_labels()))
 }
 
 legend_colors <- function() {
