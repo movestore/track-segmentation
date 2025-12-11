@@ -35,7 +35,7 @@ seg_ui <- function(min_hours, proximity, start, end, step) {
 
       # Data tables for identified stop and metastop locations
       tabPanel(
-        "Data",
+        "Results",
         div(
           id = "data-wrapper",
           style = "position:relative; min-height:300px;",
