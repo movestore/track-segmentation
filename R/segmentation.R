@@ -34,10 +34,7 @@ move2_to_seg <- function(data) {
     ) |>
     select(animal_id, timestamp, latitude, longitude, lc) |>
     arrange(animal_id, timestamp) |>
-    na.omit() |>
-    group_by(animal_id) |>
-    filter(n() >= 2) |>
-    ungroup()
+    na.omit()
 
   data
 }
