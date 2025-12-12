@@ -23,6 +23,12 @@ Sys.setenv("APP_ARTIFACTS_DIR" = tempdir())
 # data_raw <- move2::movebank_download_study(study_id = 1718959411, sensor_type = "argos")
 
 # Convert from move2 to anticipated segmentation data format
+data_raw <- data_raw |>
+  arrange(mt_track_id(data_raw), mt_time(data_raw)) |> # Order by track ID and timestamp
+  mt_filter_unique(criterion = "first") # Remove duplicates
+
+data_raw <- data_raw[!st_is_empty(data_raw), ] # Remove empty points
+
 data <- check_seg_data(move2_to_seg(data_raw))
 
 # Use sf to identify whether IDL is crossed and build appropriate basemap bbox
