@@ -48,8 +48,6 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-  has_stops <- reactiveVal(FALSE)
-  has_metastops <- reactiveVal(FALSE)
   results_zip <- reactiveVal(NULL)
   is_map_init <- reactiveVal(TRUE)
   cur_map_data <- reactiveVal(data)
@@ -101,9 +99,7 @@ server <- function(input, output, session) {
         mutate_empty_stops(data)
       }
     )
-    
-    has_stops(TRUE)
-    
+
     # Return inputs to ensure metastop processing uses the same inputs as 
     # were used during stop processing. Don't want metastops to be dependent
     # on current input state
@@ -133,7 +129,6 @@ server <- function(input, output, session) {
       }
     )
 
-    has_metastops(TRUE)
     button_invalid(FALSE) # Action button will now be up to date with map data
     is_map_init(FALSE) # Map no longer needs to show initial unclassified points
     cur_map_data(data_for_leaflet(metastops)) # Update data for mapping
@@ -217,7 +212,7 @@ server <- function(input, output, session) {
   
   # If algorithm hasn't been run yet, gray out the results panel
   output$data_overlay <- renderUI({
-    if (!has_stops() || !has_metastops()) {
+    if (is_map_init()) {
       div(
         class = "overlay",
         "Run the segmentation algorithm to see results here."
