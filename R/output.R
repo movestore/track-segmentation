@@ -156,7 +156,7 @@ app_version <- function() {
 
 # Improve formatting for output tables in app Data tab to make tables more
 # legible. Doesn't affect written output tables.
-prettify <- function(data, digits = 3) {
+prettify <- function(data, digits = 6) {
   mutate(
     data,
     across(where(is.numeric), ~ round(.x, digits)),
