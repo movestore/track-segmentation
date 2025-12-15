@@ -17,11 +17,23 @@ move2_to_seg <- function(data) {
   # If the data contains ARGOS lc records, use those. If not, use NA for ARGOS
   # records. "G" is always used for non-ARGOS records.
   if (has_argos_lc(data)) {
-    data <- data |>
-      mutate(lc = ifelse(sensor_type_id == 82798, as.character(argos_lc), "G"))
+    if (has_sensor_type(data)) {
+      data$lc <- ifelse(
+        data$sensor_type_id == 82798, 
+        as.character(data$argos_lc), 
+        "G"
+      )
+    } else {
+      warning("No sensor type ID found in data. All locations will be weighted equally")
+      data$lc <- "G"
+    }
   } else {
-    data <- data |>
-      mutate(lc = ifelse(sensor_type_id == 82798, NA, "G"))
+    if (has_sensor_type(data)) {
+      data$lc <- ifelse(data$sensor_type_id == 82798, NA, "G")
+    } else {
+      warning("No sensor type ID found in data. All locations will be weighted equally")
+      data$lc <- "G"
+    }
   }
 
   data <- data |>
@@ -616,6 +628,10 @@ key_recode <- function(x, key, replace = NA) {
 
 has_argos_lc <- function(data) {
   "argos_lc" %in% colnames(data)
+}
+
+has_sensor_type <- function(data) {
+  "sensor_type_id" %in% colnames(data)
 }
 
 # Handle dateline crossing. When tracks cross the dateline, update
