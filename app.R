@@ -55,7 +55,8 @@ server <- function(input, output, session) {
   cur_map_data <- reactiveVal(data)
   map_trigger <- reactiveVal(0)
   button_invalid <- reactiveVal(TRUE)
-
+  
+  # Filter map data to the input time range
   filt_map_data <- reactive({
     filter(
       req(cur_map_data()),
@@ -63,18 +64,19 @@ server <- function(input, output, session) {
       timestamp <= input$time_range[2]
     )
   })
-
-  # Ensure busy spinner starts before data prep, since both depend on recalc
-  # button event
+  
+  # On algorithm start, launch busy spinner. Separating from algorithm itself
+  # ensures spinner starts before processing does.
   observeEvent(input$recalc, priority = 100, {
     shinybusy::show_modal_spinner("radar")
   })
-
-  # Track sliders, change button CSS to indicate when segmentation needs rerun
+  
+  # Track sliders and change action button CSS to indicate when segmentation
+  # needs rerun
   observeEvent(list(input$min_hours, input$proximity), {
     button_invalid(TRUE)
   })
-
+  
   observe({
     if (button_invalid()) {
       shinyjs::removeClass("recalc", "valid-btn")
@@ -84,7 +86,8 @@ server <- function(input, output, session) {
       shinyjs::addClass("recalc", "valid-btn")
     }
   })
-
+  
+  # Identify stop locations for the given proximity and duration inputs
   stop_locations <- reactive({
     stops <- tryCatch(
       suppressWarnings(
@@ -98,9 +101,12 @@ server <- function(input, output, session) {
         mutate_empty_stops(data)
       }
     )
-
+    
     has_stops(TRUE)
-
+    
+    # Return inputs to ensure metastop processing uses the same inputs as 
+    # were used during stop processing. Don't want metastops to be dependent
+    # on current input state
     list(
       result = stops,
       min_hours = isolate(input$min_hours),
@@ -109,10 +115,11 @@ server <- function(input, output, session) {
   }) |>
     bindCache("stop", input$min_hours, input$proximity) |>
     bindEvent(input$recalc)
-
+  
+  # Identify metastop locations based on the output stop locations
   metastop_locations <- eventReactive(stop_locations(), {
     stops <- stop_locations()
-
+    
     metastops <- tryCatch(
       suppressWarnings(
         find_metastop_locations(
@@ -127,54 +134,56 @@ server <- function(input, output, session) {
     )
 
     has_metastops(TRUE)
-    button_invalid(FALSE)
-    is_map_init(FALSE)
-    cur_map_data(data_for_leaflet(metastops))
-    map_trigger(map_trigger() + 1)
-
+    button_invalid(FALSE) # Action button will now be up to date with map data
+    is_map_init(FALSE) # Map no longer needs to show initial unclassified points
+    cur_map_data(data_for_leaflet(metastops)) # Update data for mapping
+    map_trigger(map_trigger() + 1) # Increment map trigger so we can track when map is re-rendered
+    
     metastops
   })
-
+  
+  # When stops and metastops have been calculated, write output results zip
+  # automatically. Overwrites any existing results, so only the most recent
+  # run is stored.
   observeEvent(metastop_locations(), {
     stops <- stop_locations()
     metastops <- metastop_locations()
-
+    
     # Remove existing results zip if it exists
     if (!is.null(results_zip())) {
       unlink(results_zip())
       results_zip(NULL)
     }
-
+    
     f_out <- write_results(
       stops$result,
       metastops,
       stops$proximity,
       stops$min_hours
     )
-
+    
     results_zip(f_out)
   })
-
+  
   # Create the initial base map
   output$map <- renderLeaflet({
     create_basemap(bbox)
   })
-
-  # Update map on time range change, change in segmentation data results,
-  # or change in map bounds (proxy for dateline change)
+  
+  # Update map on change in segmentation data results or change in time range
   observe({
     # Dependency on map render counter ensures that we always re-render
     # map on input$recalc trigger, even if inputs don't change.
-    # (We don't want to explicitly trigger this on input$recalc because
-    # we need more control over temporal ordering of processing steps)
+    # We don't want to explicitly trigger this on input$recalc because
+    # we need to wait until all processing is complete before re-rendering
     map_trigger()
-
+    
     d <- req(filt_map_data())
-
+    
     # Handle dateline crossing longitude adjustment on the fly
     d <- d |>
       mutate(longitude_adj = get_elon(longitude, dateline = crosses_dl))
-
+    
     # Clear existing animals using non-filtered data. Filtered data will no
     # longer contain these animal IDs and they will stick to the map instead of
     # disappearing
@@ -182,7 +191,7 @@ server <- function(input, output, session) {
       clearGroup(group = unique(data$animal_id)) |>
       addTrackLayersControl(d) |> # Add layer selection panels
       addTrackLines(d) # Add track lines
-
+    
     # Initial data do not have all necessary attributes for coloring in the same
     # way as processed data. After the first time stops are calculated, we can
     # render with the stop/metastop styling
@@ -191,10 +200,11 @@ server <- function(input, output, session) {
     } else {
       map <- addTrackStopMarkers(map, d)
     }
-
+    
     shinybusy::remove_modal_spinner()
   })
-
+  
+  # Render tabular summary of stop/metastop locations after processing
   output$data_contents <- renderUI({
     tagList(
       h3("Stops"),
@@ -204,7 +214,8 @@ server <- function(input, output, session) {
       DT::dataTableOutput("metastop_data")
     )
   })
-
+  
+  # If algorithm hasn't been run yet, gray out the results panel
   output$data_overlay <- renderUI({
     if (!has_stops() || !has_metastops()) {
       div(
@@ -213,28 +224,29 @@ server <- function(input, output, session) {
       )
     }
   })
-
+  
+  # Tabular outputs
   output$stop_data <- DT::renderDataTable({
     d <- req(stop_locations()$result)
-
+    
     d <- filter(
       d,
       timestamp >= input$time_range[1],
       timestamp <= input$time_range[2]
     )
-
+    
     prettify(prep_stops_output(d))
   })
-
+  
   output$metastop_data <- DT::renderDataTable({
     d <- req(metastop_locations())
-
+    
     d <- filter(
       d,
       timestamp >= input$time_range[1],
       timestamp <= input$time_range[2]
     )
-
+    
     prettify(prep_metastops_output(d))
   })
 }
