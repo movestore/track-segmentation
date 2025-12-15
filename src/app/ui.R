@@ -48,7 +48,7 @@ segmentationUI <- function(ns, min_hours, proximity, start, end, step) {
       # Algorithm details. From HTML fragment created separately by app_info.Rmd
       tabPanel(
         "App Details",
-        div(class = "markdown-body", includeHTML("app_info.html"))
+        div(class = "markdown-body", includeHTML("src/app/app_info.html"))
       )
     )
   )
