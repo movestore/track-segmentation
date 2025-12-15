@@ -1,53 +1,80 @@
-# Track Segmentation: Stops and Movements
- - release v1.0.0
-      - a newer version of this software package may be available.
-        - provisional updates: https://code.usgs.gov/asc/track-segmentation/-/tree/main
-        - approved releases: https://code.usgs.gov/asc/track-segmentation/-/releases
+# Name of App *(Give your app a short and informative title. Please adhere to our convention of Title Case without hyphens (e.g. My New App))*
 
-## Author
-David C. Douglas (ORCID: 0000-0003-0186-1104) U.S. Geological Survey - Alaska Science Center
+MoveApps
 
-## Suggested Citation
-Douglas, D.C., 2025. Track segmentation: stops and movements (ver 1.0.0, July 2025): U.S. Geological Survey software release, https://doi.org/10.5066/P13QURM9
+Github repository: *github.com/yourAccount/Name-of-App* *(provide the link to the repository where the code of the App can be found)*
 
-## Contact
-David C. Douglas  ddouglas@usgs.gov
-- U.S. Geological Survey - Alaska Science Center;
- 4210 University Drive;
- Anchorage, Alaska 99508 USA;
- 907-786-7000
- gs-ak_asc_datamanagers@usgs.gov
+## Description
+*Enter here the short description of the App that might also be used when filling out the description during App submission to MoveApps. This text is directly presented to Users that look through the list of Apps when compiling Workflows.*
 
-## Project Overview
-   - This R script inputs animal tracking data and segments the time series for each individual animal into sequential periods of stops and movements. The algorithm identifies stops based on two influential user-defined thresholds: 1) a distance threshold (hereafter 'Dist') that defines the upper limit of spatial displacement permissible while occupying a stop, and 2) a duration threshold (hereafter 'Dur') that defines the minimum amount of time a stop is required to persist. Values for the Dist and Dur should be chosen in a manner that targets animal behavior(s) of interest while also accommodating the spatial accuracy and temporal frequency of the location data under analysis. Locations not classified as stops are classified as movements. A "User Guide" is included in the software package.
+## Documentation
+*Enter here a detailed description of your App. What is it intended to be used for. Which steps of analyses are performed and how. Please be explicit about any detail that is important for use and understanding of the App and its outcomes. You might also refer to the sections below.*
 
-## Software Requirements
- - Scripts were developed in R (version 4.4.1, and tested in version
-    4.4.2)
-    - available for free download from the Comprehensive R Archive Network (CRAN) https://cran.r-project.org
+### Application scope
+#### Generality of App usability
+*State here if the App was developed for a specific species, taxon or taxonomic group, or to answer a specific question. How might it influence the scope and utility of the App. This information will help the user to understand why the App might be producing no or odd results.*
 
-## Files Overview
+*Examples:*
 
-### R scripts:
- - `coreVisualizeCode_v01.R`	- displays results in an interactive map
- - `coreStopoverCode_v01.R`	- generates results based user's chosen options
- - `coreMovebankDownloadCode_v01.R`	- acquires input data from Movebank.org
- - `_run_detectStops_v01_Movebank_input_example01.R`	- an example script for analysis of tracking data stored at Movebank.org
- - `_run_detectStops_v01_CSV_input_example01.R`	- example script #1 for analysis of tracking data stored in tabular CSV format
- - `_run_detectStops_v01_CSV_input_example02.R`	- example script #2 for analysis of tracking data stored in tabular CSV format
+This App was developed using data of birds. 
 
-### Example data:
-- `inputData_example01.csv`		- tracking data in CSV format for example script #1
-- `inputData_example02.csv`		- tracking data in CSV format for example script #2
+This App was developed using data of red deer. 
 
-### Other software release files
-- `User_Manual_Track_Segmentation.pdf`		- User manual
-- `README.md`		- documentation for this USGS software release
-- `code.json`		- metadata for this USGS software release 
-- `LICENSE.md`		- standard USGS software release license and copyright
-- `DISCLAIMER.md`	- standard USGS software release disclaimer
-- `CHANGELOG.md`	- package revision history
+This App was developed for any taxonomic group. 
 
-## Distribution
-- The U.S. Geological Survey is the authoritative source and distributor of this software release through this repository https://doi.org/10.5066/P13QURM9
+This App was developed to identify kill sites, but can probably be used to identify any kind of location clusters like nests, dens or drinking holes.
 
+#### Required data properties
+*State here the required and/or optimal data properties for this App to perform properly.*
+
+*Examples:*
+
+This App is only applicable to data that reflect range resident behavior. 
+
+The data should have a fix rate of at least 1 location per 30 minutes. 
+
+The App should work for any kind of (location) data.
+
+### Input type
+*Indicate which type of input data the App requires.*
+
+*Example*: `move2::move2_loc`
+
+### Output type
+*Indicate which type of output data the App produces to be passed on to subsequent Apps.*
+
+*Example:* `move2::move2_loc`
+
+### Artefacts
+*If the App creates artefacts (e.g. csv, pdf, jpeg, shapefiles, etc), please list them here and describe each.*
+
+*Example:* `rest_overview.csv`: csv-file with Table of all rest site properties
+
+### Settings 
+*Please list and define all settings that the App requires to be set by the App user, if necessary including their unit. Please state each of the settings that the user will encounter in the UI of the shiny app.*
+
+*Example:* `Radius of resting site` (radius): Defined radius the animal has to stay in for a given duration of time for it to be considered resting site. Unit: `metres`.
+
+*Always include the "Store settings" setting as it will appear automatically in all shiny apps*
+`Store settings`: click to store the current settings of the App for future Workflow runs. 
+
+### Changes in output data
+*Specify here how and if the App modifies the input data. Describe clearly what e.g. each additional column means.*
+
+*Examples:*
+
+The App adds to the input data the columns `Max_dist` and `Avg_dist`. They contain the maximum distance to the provided focal location and the average distance to it over all locations. 
+
+The App filterers the input data as selected by the user. 
+
+The output data is the outcome of the model applied to the input data. 
+
+The input data remains unchanged.
+
+### Most common errors
+*Please describe shortly what most common errors of the App can be, how they occur and best ways of solving them.*
+
+### Null or error handling
+*Please indicate for each setting as well as the input data which behaviour the App is supposed to show in case of errors or NULL values/input. Please also add notes of possible errors that can happen if settings/parameters are improperly set and any other important information that you find the user should be aware of.*
+
+*Example:* **Setting `radius`:** If no radius AND no duration are given, the input data set is returned with a warning. If no radius is given (NULL), but a duration is defined then a default radius of 1000m = 1km is set. 
