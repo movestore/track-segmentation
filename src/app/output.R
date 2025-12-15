@@ -141,10 +141,7 @@ write_results <- function(stops,
   write.csv(metastops_to_write, files[[2]], row.names = FALSE)
   write.csv(transit_to_write, files[[3]], row.names = FALSE)
 
-  # TODO: Is `appArtifactPath()` supposed to construct file path itself?
-  # currently just concatenates filename with the artifact path...
-  # This seems to conflict with MoveApps docs example for shiny output files
-  zip_file <- moveapps::appArtifactPath(paste0("/", fname_zip))
+  zip_file <- moveapps::appArtifactPath(fname_zip)
   zip::zip(zip_file, files = unlist(files), mode = "cherry-pick")
 
   zip_file

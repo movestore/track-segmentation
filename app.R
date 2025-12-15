@@ -7,47 +7,47 @@ library(leaflet)
 library(leaflet.extras)
 library(shinyBS)
 
-source("R/ui.R")
-source("R/segmentation.R")
-source("R/output.R")
-source("R/map.R")
+source("./src/app/ui.R")
+source("./src/app/segmentation.R")
+source("./src/app/output.R")
+source("./src/app/map.R")
 
-# This redirects output to tempdir for dev purposes
-# TODO: after adapting to MoveApps framework, output location should be
-# handled by .env instead
-Sys.setenv("APP_ARTIFACTS_DIR" = tempdir())
-
-# This will ultimately come from previous MoveApp
-# data_raw <- readRDS("~/Documents/projects/track-segmentation/data/raw/input2_move2loc_LatLon.rds")
-# data_raw <- move2::movebank_download_study(study_id = 438644854, sensor_type_id = "argos-doppler-shift")
-# data_raw <- move2::movebank_download_study(study_id = 1718959411, sensor_type = "argos")
-
-# Convert from move2 to anticipated segmentation data format
-data_raw <- data_raw |>
-  arrange(mt_track_id(data_raw), mt_time(data_raw)) |> # Order by track ID and timestamp
-  mt_filter_unique(criterion = "first") # Remove duplicates
-
-data_raw <- data_raw[!st_is_empty(data_raw), ] # Remove empty points
-
-data <- check_seg_data(move2_to_seg(data_raw))
-
-# Use sf to identify whether IDL is crossed and build appropriate basemap bbox
-crosses_dl <- move2_crosses_dateline(data_raw)
-bbox <- get_init_bbox(data, crosses_dl)
-
-# ------------------------------------------------------------------------------
-
-ui <- fluidPage(
-  seg_ui(
-    min_hours = 6,
-    proximity = 150,
-    start = as.POSIXct(min(data$timestamp)),
-    end = as.POSIXct(max(data$timestamp)),
-    step = 86400
+shinyModuleUserInterface <- function(id, label) {
+  ns <- NS(id)
+  
+  fluidPage(
+    segmentationUI(
+      ns,
+      min_hours = 6,
+      proximity = 150,
+      start = as.POSIXct(min(data$timestamp)),
+      end = as.POSIXct(max(data$timestamp)),
+      step = 86400
+    )
   )
-)
+}
 
-server <- function(input, output, session) {
+shinyModule <- function(input, output, session, data) {
+  ns <- session$ns
+  current <- reactiveVal(data) # For returning input data
+  
+  # Prep -------------
+  
+  data <- data |>
+    arrange(mt_track_id(data_raw), mt_time(data_raw)) |> # Order by track ID and timestamp
+    mt_filter_unique(criterion = "first") # Remove duplicates
+  
+  data <- data[!st_is_empty(data), ] # Remove empty points
+  
+  crosses_dl <- move2_crosses_dateline(data)
+  
+  data <- check_seg_data(move2_to_seg(data))
+  
+  # Use sf to identify whether IDL is crossed and build appropriate basemap bbox
+  bbox <- get_init_bbox(data, crosses_dl)
+  
+  # ------------------
+  
   results_zip <- reactiveVal(NULL)
   is_map_init <- reactiveVal(TRUE)
   cur_map_data <- reactiveVal(data)
@@ -77,11 +77,11 @@ server <- function(input, output, session) {
   
   observe({
     if (button_invalid()) {
-      shinyjs::removeClass("recalc", "valid-btn")
-      shinyjs::addClass("recalc", class = "invalid-btn")
+      shinyjs::removeClass(ns("recalc"), "valid-btn")
+      shinyjs::addClass(ns("recalc"), class = "invalid-btn")
     } else {
-      shinyjs::removeClass("recalc", "invalid-btn")
-      shinyjs::addClass("recalc", "valid-btn")
+      shinyjs::removeClass(ns("recalc"), "invalid-btn")
+      shinyjs::addClass(ns("recalc"), "valid-btn")
     }
   })
   
@@ -109,7 +109,7 @@ server <- function(input, output, session) {
       proximity = isolate(input$proximity)
     )
   }) |>
-    bindCache("stop", input$min_hours, input$proximity) |>
+    bindCache(input$min_hours, input$proximity) |>
     bindEvent(input$recalc)
   
   # Identify metastop locations based on the output stop locations
@@ -182,7 +182,7 @@ server <- function(input, output, session) {
     # Clear existing animals using non-filtered data. Filtered data will no
     # longer contain these animal IDs and they will stick to the map instead of
     # disappearing
-    map <- leafletProxy("map") |>
+    map <- leafletProxy(ns("map")) |>
       clearGroup(group = unique(data$animal_id)) |>
       addTrackLayersControl(d) |> # Add layer selection panels
       addTrackLines(d) # Add track lines
@@ -203,10 +203,10 @@ server <- function(input, output, session) {
   output$data_contents <- renderUI({
     tagList(
       h3("Stops"),
-      DT::dataTableOutput("stop_data"),
+      DT::dataTableOutput(ns("stop_data")),
       hr(),
       h3("Metastops"),
-      DT::dataTableOutput("metastop_data")
+      DT::dataTableOutput(ns("metastop_data"))
     )
   })
   
@@ -244,6 +244,6 @@ server <- function(input, output, session) {
     
     prettify(prep_metastops_output(d))
   })
+  
+  return(reactive({ current() }))
 }
-
-shinyApp(ui, server)
