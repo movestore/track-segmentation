@@ -1,80 +1,208 @@
-# Name of App *(Give your app a short and informative title. Please adhere to our convention of Title Case without hyphens (e.g. My New App))*
+# Track Segmentation
 
 MoveApps
 
-Github repository: *github.com/yourAccount/Name-of-App* *(provide the link to the repository where the code of the App can be found)*
+Github repository: *github.com/movestore/track-segmentation*
 
 ## Description
-*Enter here the short description of the App that might also be used when filling out the description during App submission to MoveApps. This text is directly presented to Users that look through the list of Apps when compiling Workflows.*
+
+Segment a time series of location data for individual animals into sequential
+periods of stops and movements based on user-provided location proximity and
+stop duration thresholds. Explore the results in an interactive map.
 
 ## Documentation
-*Enter here a detailed description of your App. What is it intended to be used for. Which steps of analyses are performed and how. Please be explicit about any detail that is important for use and understanding of the App and its outcomes. You might also refer to the sections below.*
+
+This app applies a track segmentation algorithm to the locations in the input
+data to identify stop locations. Within the app, the user defines two
+input parameters:
+
+-   a maximum allowable pairwise distance (referred to as `proximity`) among all
+    locations that constitute a single stop (in meters).
+-   a minimum required duration (referred to as `min_hours`) that a stop 
+    must persist (in hours).
+
+### Using the app
+
+To run the segmentation algorithm, enter a value in the 
+**Maximum distance between stopped locations (meters)** and 
+**Minimum stop duration (hours)** fields, then click the 
+**Identify stop locations** button.
+
+The app will be inactive while the algorithm runs. When it finishes, you will
+be able to see the results on the interactive map in the app. Use the
+**Time range of interest** slider to focus on the results for a particular 
+time range. You can also click on the stop and metastop points to view metadata
+about those points.
+
+Click on the "Results" tab to see the identified stop and metastop locations
+in tabular format.
+
+Details about the algorithm can be found in the "App Details" tab and in this
+README.
+
+### Algorithm details
+
+#### Part 1: Identifying stops
+
+The algorithm steps chronologically through each animal's tracking time
+series and identifies sequences of locations (i.e., periods of time)
+when the animal was stopped (or conversely, not stopped). Locations that
+constitute a **stop** are defined as those that:
+
+1.  are all within `proximity` from one another (i.e., distances between
+    all pairwise locations will be less than `proximity`).
+2.  have an elapsed time between the first and last location that is
+    greater than `min_hours`.
+
+It follows that stops must consist of at least two distinct locations.
+
+The algorithm begins with the first location for a given animal (the anchor 
+location) and calculates the distance and elapsed time to the next location. If
+the distance is greater than `proximity` no stop is detected and the
+procedure repeats with the next location as the anchor.
+
+If the distance is less than `proximity` and the elapsed time is less
+than `min_hours` then a “potential stop” is detected and the next
+location is considered. If all three pairwise distances between the
+three locations are less than `proximity` but the elapsed time from the
+first to the third location is still less than `min_hours`, then the
+stop remains “potential” and the next location is considered. Locations
+are sequentially added to the “potential” stop until **either**:
+
+1.  all pairwise distances among the locations are less than `proximity`
+    and the elapsed time from the first to the last location is greater
+    than `min_hours`. In this case a stop is detected. The stop will
+    include all locations from the anchor location to the final location
+    that did not exceed the `proximity` threshold. The location that
+    exceeded the threshold then becomes the new anchor location, and the
+    algorithm continues.
+2.  one or more pairwise distances are greater than `proximity`. In this
+    case no stop is detected. The location that exceeded the threshold
+    becomes the new anchor location, and the algorithm continues.
+
+After all locations for a given animal have been processed, a single
+location for each detected stop is calculated as a weighted average of
+the respective stop’s locations. The weighting gives strong emphasis on
+GPS locations, followed by emphasis on higher quality Argos locations
+compared to lower quality Argos locations.
+
+These derived stop locations are assigned a timestamp equivalent to the
+respective stop’s initial (anchor) tracking location. Note that “stop
+locations” are derived averages of the tracking location data (i.e.,
+they are *not* observed data).
+
+#### Part 2: Identifying metastops
+
+A **metastop** consists of one or more chronologically sequential stops
+in which all pairwise distances between the stop locations are less than
+`proximity`.
+
+To identify metastops, the algorithm runs the same procedure as
+described in part 1, but uses the *derived stop locations* (and
+timestamps) as the inputs to the algorithm instead of the raw location
+data.
+
+Depending on the provided `proximity` and `min_hours` thresholds and the
+precision of the location data (which affects the weighted location
+averaging), consecutive discrete stops can be less than `proximity`
+meters apart. By identifying metastops, the segmentation algorithm combines 
+information from adjacent stops while also preserving the identity of 
+each unique stop.
+
+Unlike stop locations, metastops may consist of only one stop, in which
+case the metastop and the single stop share the same attributes. This
+ensures that when considered in full, the metastop results comprehensively 
+include all identified stops. When a metastop comprises more than
+one stop, the location of the
+stop with the longest duration (i.e., where the animal spent the most
+time) is used as the recorded metastop location. The timestamp of the
+earliest stop in the metastop is used as the metastop's recorded timestamp.
+
+### Results
+
+After the algorithm completes, the classified stop, metastop, and movement 
+locations are displayed on an interactive leaflet map. These locations are 
+also summarized in a tabular format in the app's "Results" tab. The app
+saves the results of the classified stop, metastop, and movement locations
+as an app artefact.
 
 ### Application scope
 #### Generality of App usability
-*State here if the App was developed for a specific species, taxon or taxonomic group, or to answer a specific question. How might it influence the scope and utility of the App. This information will help the user to understand why the App might be producing no or odd results.*
-
-*Examples:*
-
-This App was developed using data of birds. 
-
-This App was developed using data of red deer. 
 
 This App was developed for any taxonomic group. 
 
-This App was developed to identify kill sites, but can probably be used to identify any kind of location clusters like nests, dens or drinking holes.
-
 #### Required data properties
-*State here the required and/or optimal data properties for this App to perform properly.*
 
-*Examples:*
+The App should work for any kind of location data.
 
-This App is only applicable to data that reflect range resident behavior. 
-
-The data should have a fix rate of at least 1 location per 30 minutes. 
-
-The App should work for any kind of (location) data.
+The segmentation algorithm provides some handling specifically designed 
+for Argos data, but location data collected by other means are also fully 
+supported.
 
 ### Input type
-*Indicate which type of input data the App requires.*
 
-*Example*: `move2::move2_loc`
+`move2::move2_loc`
 
 ### Output type
-*Indicate which type of output data the App produces to be passed on to subsequent Apps.*
 
-*Example:* `move2::move2_loc`
+`move2::move2_loc`
 
 ### Artefacts
-*If the App creates artefacts (e.g. csv, pdf, jpeg, shapefiles, etc), please list them here and describe each.*
 
-*Example:* `rest_overview.csv`: csv-file with Table of all rest site properties
+`track_segmentation_v014_proxMeters{proximity}_minHours{min_hours}.zip`:
+contains three .csv files with the results of the segmentation algorithm for
+the indicated `proximity` and `min_hours` parameters.
+
+-   `stopovers_v014_proxMeters{proximity}_minHours{min_hours}.csv`: contains 
+    one record for each identified stop, including animal identifier, stop
+    identifier, start and end time for the stop, weighted location of the stop,
+    and the number of recorded locations that belong to that stop.
+
+-   `metaStops_v014_proxMeters{proximity}_minHours{min_hours}.csv`:
+    contains one record for each metastop, including animal identifier, metastop
+    identifier, start and end time for the metastop, location of the metastop,
+    and the number of identified stops that belong to that metastop.
+
+-   `locationsAnnotated_v014_proxMeters{proximity}_minHours{min_hours}.csv`: 
+    contains one record for each input location annotated with a variable 
+    denoting the animal's status at the respective place and time (either 
+    "Stopped", "Movement", or "Movement during stop"). For locations classified
+    as "Stopped", the associated stop and metastop ids are also indicated.
 
 ### Settings 
-*Please list and define all settings that the App requires to be set by the App user, if necessary including their unit. Please state each of the settings that the user will encounter in the UI of the shiny app.*
 
-*Example:* `Radius of resting site` (radius): Defined radius the animal has to stay in for a given duration of time for it to be considered resting site. Unit: `metres`.
+**Maximum distance between stopped locations (meters)** (`proximity`): the 
+maximum allowable pairwise distance (`proximity`) among all locations that 
+constitute a single stop (in meters).
 
-*Always include the "Store settings" setting as it will appear automatically in all shiny apps*
-`Store settings`: click to store the current settings of the App for future Workflow runs. 
+**Minimum stop duration (hours)** (`min_hours`): the minimum required duration 
+(`min_hours`) that a stop must persist (in hours).
+
+**Time range of interest** (`time_range`): Filter the output map to show only
+those locations that fall within a given time interval. This does not affect
+the results of the segmentation algorithm, but can be used for targeted
+exploration of the segmentation results.
+
+**Store settings**: Click to store the current settings of the App for future 
+Workflow runs. 
 
 ### Changes in output data
-*Specify here how and if the App modifies the input data. Describe clearly what e.g. each additional column means.*
 
-*Examples:*
-
-The App adds to the input data the columns `Max_dist` and `Avg_dist`. They contain the maximum distance to the provided focal location and the average distance to it over all locations. 
-
-The App filterers the input data as selected by the user. 
-
-The output data is the outcome of the model applied to the input data. 
-
-The input data remains unchanged.
+The input data remain unchanged.
 
 ### Most common errors
-*Please describe shortly what most common errors of the App can be, how they occur and best ways of solving them.*
+
+No recurring errors known at current time
 
 ### Null or error handling
-*Please indicate for each setting as well as the input data which behaviour the App is supposed to show in case of errors or NULL values/input. Please also add notes of possible errors that can happen if settings/parameters are improperly set and any other important information that you find the user should be aware of.*
 
-*Example:* **Setting `radius`:** If no radius AND no duration are given, the input data set is returned with a warning. If no radius is given (NULL), but a duration is defined then a default radius of 1000m = 1km is set. 
+If the provided distance and stop duration parameters do not identify any
+stops, all locations will be classified as movement locations and no results
+will be shown in the "Results" tab.
+
+Depending on the number of records in the input data, the segmentation
+algorithm may take some time to run. The interactive map may also lag in these
+cases. To avoid this, you can first filter your input data to specific animals
+in a previous step of your workflow. You can use this data subset to fine-tune
+your segmentation parameters, save the selected settings, and re-run the 
+workflow with the full dataset.
