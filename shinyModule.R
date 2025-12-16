@@ -16,14 +16,7 @@ shinyModuleUserInterface <- function(id, label) {
   ns <- NS(id)
   
   fluidPage(
-    segmentationUI(
-      ns,
-      min_hours = 6,
-      proximity = 150,
-      start = as.POSIXct(min(data$timestamp)),
-      end = as.POSIXct(max(data$timestamp)),
-      step = 86400
-    )
+    segmentationUI(ns, min_hours = 6, proximity = 150)
   )
 }
 
@@ -34,7 +27,7 @@ shinyModule <- function(input, output, session, data) {
   # Prep -------------
   
   data <- data |>
-    arrange(mt_track_id(data_raw), mt_time(data_raw)) |> # Order by track ID and timestamp
+    arrange(mt_track_id(data), mt_time(data)) |> # Order by track ID and timestamp
     mt_filter_unique(criterion = "first") # Remove duplicates
   
   data <- data[!st_is_empty(data), ] # Remove empty points
@@ -53,14 +46,32 @@ shinyModule <- function(input, output, session, data) {
   cur_map_data <- reactiveVal(data)
   map_trigger <- reactiveVal(0)
   button_invalid <- reactiveVal(TRUE)
+  slider_needs_update <- reactiveVal(TRUE)
+  
+  # Update time range slider endpoints to reflect data time range on app load
+  observe({
+    if (slider_needs_update()) {
+      start <- as.POSIXct(min(data$timestamp))
+      end <- as.POSIXct(max(data$timestamp))
+      
+      updateSliderInput(
+        session,
+        "time_range",
+        min = start,
+        max = end,
+        value = c(start, end),
+        timeFormat = "%Y-%m-%d",
+        step = 86400
+      )
+    }
+    
+    isolate(slider_needs_update(FALSE))
+  })
   
   # Filter map data to the input time range
   filt_map_data <- reactive({
-    filter(
-      req(cur_map_data()),
-      timestamp >= input$time_range[1],
-      timestamp <= input$time_range[2]
-    )
+    tr <- req(input$time_range)
+    filter(req(cur_map_data()), timestamp >= tr[1], timestamp <= tr[2])
   })
   
   # On algorithm start, launch busy spinner. Separating from algorithm itself

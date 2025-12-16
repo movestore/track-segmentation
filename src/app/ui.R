@@ -1,5 +1,10 @@
 # Assemble the app UI
-segmentationUI <- function(ns, min_hours, proximity, start, end, step) {
+segmentationUI <- function(ns, 
+                           min_hours = 6, 
+                           proximity = 150, 
+                           start = time_range_slider_start(), 
+                           end = time_range_slider_end(), 
+                           step = 86400) {
   tagList(
     shinyjs::useShinyjs(), # For dynamic styling of segmentation action button
     
@@ -61,16 +66,19 @@ seg_panel <- function(ns, proximity, min_hours, start, end, step) {
     id = "seg-panel",
     top = 54,
     seg_panel_header(),
-    proximity_input(proximity),
-    duration_input(min_hours),
+    proximity_input(ns, proximity),
+    duration_input(ns, min_hours),
     actionButton(ns("recalc"), "Identify stop locations"),
     hr(),
-    time_range_slider(start, end, step)
+    time_range_slider(ns, start, end, step)
   )
 }
 
 # App inputs
-time_range_slider <- function(ns, start, end, step) {
+time_range_slider <- function(ns, 
+                              start = time_range_slider_start(), 
+                              end = time_range_slider_end(), 
+                              step = 86400) {
   sliderInput(
     ns("time_range"),
     "Time range of interest",
@@ -83,6 +91,16 @@ time_range_slider <- function(ns, start, end, step) {
   )
 }
 
+# Default values for initial time range slider.
+# Slider will be updated after data are ingested to reflect the data time range
+time_range_slider_start <- function() {
+  as.POSIXct("2000-01-01 00:00:00", "UTC")
+}
+
+time_range_slider_end <- function() {
+  as.POSIXct("2001-01-01 00:00:00", "UTC")
+}
+
 seg_panel_header <- function() {
   tagList(
     h4("Segmentation Parameters"),
@@ -91,7 +109,7 @@ seg_panel_header <- function() {
   )
 }
 
-proximity_input <- function(ns, proximity) {
+proximity_input <- function(ns, proximity = 150) {
   numericInput(
     ns("proximity"),
     span(
@@ -103,7 +121,7 @@ proximity_input <- function(ns, proximity) {
   )
 }
 
-duration_input <- function(ns, min_hours) {
+duration_input <- function(ns, min_hours = 6) {
   numericInput(
     ns("min_hours"),
     span("Minimum stop duration (hours)", icon("question-circle", id = "dur-info")),
