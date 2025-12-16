@@ -36,7 +36,7 @@ segmentationUI <- function(ns,
           end = end,
           step = step
         ),
-        leafletOutput(ns("map"), height = "calc(100vh - 50px)")
+        leafletOutput(ns("map"), height = "calc(100vh - 84px)")
       ),
       
       # Data tables for identified stop and metastop locations
@@ -64,7 +64,7 @@ seg_panel <- function(ns, proximity, min_hours, start, end, step) {
   absolutePanel(
     class = "slider-panel",
     id = "seg-panel",
-    top = 54,
+    top = 88,
     seg_panel_header(),
     proximity_input(ns, proximity),
     duration_input(ns, min_hours),
