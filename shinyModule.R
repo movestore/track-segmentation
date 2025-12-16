@@ -88,11 +88,11 @@ shinyModule <- function(input, output, session, data) {
   
   observe({
     if (button_invalid()) {
-      shinyjs::removeClass(ns("recalc"), "valid-btn")
-      shinyjs::addClass(ns("recalc"), class = "invalid-btn")
+      shinyjs::removeClass("recalc", "valid-btn")
+      shinyjs::addClass("recalc", class = "invalid-btn")
     } else {
-      shinyjs::removeClass(ns("recalc"), "invalid-btn")
-      shinyjs::addClass(ns("recalc"), "valid-btn")
+      shinyjs::removeClass("recalc", "invalid-btn")
+      shinyjs::addClass("recalc", "valid-btn")
     }
   })
   
