@@ -1,7 +1,7 @@
 # Reformat stop results data for display and output CSV file
 prep_stops_output <- function(data) {
   if (nrow(data) == 0) {
-    return(tibble::tibble())
+    return(dplyr::tibble())
   }
 
   data |>
@@ -24,7 +24,7 @@ prep_stops_output <- function(data) {
 # Reformat metastop results data for display and output CSV file
 prep_metastops_output <- function(data) {
   if (nrow(data) == 0) {
-    return(tibble::tibble())
+    return(dplyr::tibble())
   }
 
   data |>
@@ -48,7 +48,7 @@ prep_metastops_output <- function(data) {
 # to link metastops to transit locations
 prep_location_output <- function(data1, data2) {
   if (nrow(data1) == 0 || nrow(data2) == 0) {
-    return(tibble::tibble())
+    return(dplyr::tibble())
   }
 
   temp1 <- data2 |>

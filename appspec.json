@@ -1,66 +1,99 @@
 {
   "version": "1.2",
-  "settings": [
-    {
-      "id": "auxiliary-file-a",
-      "name": "Personalization",
-      "description": "You can personalize the app by providing a file",
-      "type": "USER_FILE"
-    }
-  ],
+  "settings": [],
   "dependencies": {
     "R": [
       {
-        "name": "shiny"
+        "name": "dplyr"
+      },
+      {
+        "name": "DT"
+      },
+      {
+        "name": "geosphere"
+      },
+      {
+        "name": "leaflet"
+      },
+      {
+        "name": "leaflet.extras"
+      },
+      {
+        "name": "move2"
       },
       {
         "name": "sf"
       },
       {
-       "remotes": "install_git('https://gitlab.com/bartk/move2.git')"
+        "name": "shiny"
+      },
+      {
+        "name": "shinyBS"
+      },
+      {
+        "name": "shinybusy"
+      },
+      {
+        "name": "shinyjs"
+      },
+      {
+        "name": "tidyr"
+      },
+      {
+        "name": "zip"
       }
     ]
   },
-  "providedAppFiles": [
-    {
-      "settingId": "auxiliary-file-a",
-      "from": "data/auxiliary/user-files/provided-app-files/auxiliary-file-a/sample.txt"
-    }
-  ],
   "license": {
     "key": "MIT"
   },
   "language": "eng",
   "keywords": [
-    "example",
-    "template"
+    "tracks",
+    "segments",
+    "track segmentation",
+    "stop",
+    "movement",
+    "classification",
+    "leaflet",
+    "shiny",
+    "interactive",
+    "map",
+    "migration"
   ],
   "people": [
-    {
-      "firstName": "Charles",
+     {
+      "firstName": "Finn",
       "middleInitials": null,
-      "lastName": "Darwin",
-      "email": "creator@example.com",
+      "lastName": "Roberts",
+      "email": "froberts@ab.mpg.de",
+      "roles": [
+        "author",
+        "compiler"
+      ],
+      "orcid": null,
+      "affiliation": "Max Planck Institute for Animal Behavior",
+      "affiliationRor": "https://ror.org/026stee22"
+    },
+    {
+      "firstName": "David",
+      "middleInitials": "C",
+      "lastName": "Douglas",
+      "email": "ddouglas@usgs.gov",
       "roles": [
         "author",
         "creator"
       ],
-      "orcid": null,
-      "affiliation": null,
-      "affiliationRor": null
-    }
-  ],
-  "funding": [
-    {
-      "name": "funder name",
-      "comment": "grant for App"
+      "orcid": "0000-0003-0186-1104",
+      "affiliation": "U.S. Geological Survey, Alaska Science Center",
+      "affiliationRor": "https://ror.org/05ehhzx21"
     }
   ],
   "references": [
     {
-      "type": "IsDescribedBy",
-      "note": "Darwin, C. 1900. The creation. Journal XY. 1-2",
-      "url": "https://anylink.xyz"
+      "type": "Cites",
+      "note": "Douglas, D.C., 2025. Track segmentation: stops and movements (ver 1.0.0, July 2025): U.S. Geological Survey software release",
+      "url": "https://doi.org/10.5066/P13QURM9"
     }
   ]
 }
