@@ -45,7 +45,8 @@ shinyModule <- function(input, output, session, data) {
   is_map_init <- reactiveVal(TRUE)
   cur_map_data <- reactiveVal(data)
   map_trigger <- reactiveVal(0)
-  button_invalid <- reactiveVal(TRUE)
+  recalc_btn_invalid <- reactiveVal(TRUE)
+  write_btn_invalid <- reactiveVal(TRUE)
   slider_needs_update <- reactiveVal(TRUE)
   
   # Update time range slider endpoints to reflect data time range on app load
@@ -80,19 +81,34 @@ shinyModule <- function(input, output, session, data) {
     shinybusy::show_modal_spinner("radar")
   })
   
+  observeEvent(input$write, priority = 100, {
+    shinybusy::show_modal_spinner("radar")
+  })
+  
   # Track sliders and change action button CSS to indicate when segmentation
   # needs rerun
   observeEvent(list(input$min_hours, input$proximity), {
-    button_invalid(TRUE)
+    recalc_btn_invalid(TRUE)
   })
   
   observe({
-    if (button_invalid()) {
+    if (recalc_btn_invalid()) {
       shinyjs::removeClass("recalc", "valid-btn")
       shinyjs::addClass("recalc", class = "invalid-btn")
     } else {
       shinyjs::removeClass("recalc", "invalid-btn")
       shinyjs::addClass("recalc", "valid-btn")
+    }
+  })
+  
+  # Ensure write button cannot be clicked if segmentation algorithm isn't done
+  observe({
+    if (!write_btn_invalid()) {
+      shinyjs::removeClass("write", "valid-btn")
+      shinyjs::addClass("write", class = "invalid-btn")
+    } else {
+      shinyjs::removeClass("write", "invalid-btn")
+      shinyjs::addClass("write", "valid-btn")
     }
   })
   
@@ -140,7 +156,8 @@ shinyModule <- function(input, output, session, data) {
       }
     )
 
-    button_invalid(FALSE) # Action button will now be up to date with map data
+    recalc_btn_invalid(FALSE) # Action button will now be up to date with map data
+    write_btn_invalid(FALSE)
     is_map_init(FALSE) # Map no longer needs to show initial unclassified points
     cur_map_data(data_for_leaflet(metastops)) # Update data for mapping
     map_trigger(map_trigger() + 1) # Increment map trigger so we can track when map is re-rendered
@@ -148,10 +165,17 @@ shinyModule <- function(input, output, session, data) {
     metastops
   })
   
+  # Ensure a downstream observer requests metastop values somewhere in app
+  # Otherwise, there is no passive observer that requests these values in the
+  # app and the pipeline is never triggered.
+  observe({
+    metastop_locations()
+  })
+  
   # When stops and metastops have been calculated, write output results zip
   # automatically. Overwrites any existing results, so only the most recent
   # run is stored.
-  observeEvent(metastop_locations(), {
+  observeEvent(input$write, {
     stops <- stop_locations()
     metastops <- metastop_locations()
     
@@ -168,7 +192,10 @@ shinyModule <- function(input, output, session, data) {
       stops$min_hours
     )
     
+    write_btn_invalid(TRUE)
     results_zip(f_out)
+    
+    shinybusy::remove_modal_spinner()
   })
   
   # Create the initial base map

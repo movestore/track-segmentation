@@ -69,6 +69,7 @@ seg_panel <- function(ns, proximity, min_hours, start, end, step) {
     proximity_input(ns, proximity),
     duration_input(ns, min_hours),
     actionButton(ns("recalc"), "Identify stop locations"),
+    actionButton(ns("write"), "Write results"),
     hr(),
     time_range_slider(ns, start, end, step)
   )

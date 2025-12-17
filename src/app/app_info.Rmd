@@ -155,9 +155,9 @@ app's "Results" tab.
 
 ## Output
 
-The app automatically produces a zip archive containing three CSV files
-containing the results of the segmentation algorithm for the most-recently
-run set of input parameters.
+After the algorithm has been run for a set of inputs, click the "Write results"
+button to write a zip archive storing the segmentation results. This archive
+contains three CSV files:
 
 -   The `stopovers_*` output file contains one record for each
     identified stop.
@@ -171,3 +171,6 @@ run set of input parameters.
 
 The `stopovers_*` and `metastops_*` output files correspond to the tables
 shown in the app's "Results" tab (with some detail removed for legibility).
+
+Note that writing results will overwrite any previously saved results of the
+algorithm.

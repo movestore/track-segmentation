@@ -37,6 +37,10 @@ about those points.
 Click on the "Results" tab to see the identified stop and metastop locations
 in tabular format.
 
+After the algorithm has been run for a set of inputs, click the "Write results"
+button to write the stop and metastop location results in CSV format as
+app artifact files.
+
 Details about the algorithm can be found in the "App Details" tab and in this
 README.
 
@@ -121,7 +125,7 @@ earliest stop in the metastop is used as the metastop's recorded timestamp.
 ### Results
 
 After the algorithm completes, the classified stop, metastop, and movement 
-locations are displayed on an interactive leaflet map. 
+locations are displayed on an interactive leaflet map.
 
 Metastop location markers are displayed in red and are scaled in size relative
 to the number of stops that belong to that metastop.
@@ -132,8 +136,11 @@ from the *annotated location data* for the animal; these points do not show
 the *derived* stop locations used to identify metastops.
 
 The classified locations are also summarized in a tabular format in the 
-app's "Results" tab. The app saves the results of the classified stop, 
-metastop, and movement locations as an app artefact.
+app's "Results" tab. 
+
+After running the algorithm, the results of the classified stop, 
+metastop, and movement locations can be saved as an app artifact by clicking
+the "Write results" button.
 
 ### Application scope
 #### Generality of App usability
