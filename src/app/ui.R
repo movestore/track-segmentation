@@ -154,3 +154,13 @@ seg_info <- function() {
     "For more information on these parameters, see the App Details tab."
   )
 }
+
+toggle_valid_btn <- function(id, invalidated) {
+  if (invalidated) {
+    shinyjs::removeClass(id, "valid-btn")
+    shinyjs::addClass(id, "invalid-btn")
+  } else {
+    shinyjs::removeClass(id, "invalid-btn")
+    shinyjs::addClass(id, "valid-btn")
+  }
+}
