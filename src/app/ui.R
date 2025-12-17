@@ -21,7 +21,7 @@ segmentationUI <- function(ns,
     ),
     
     # Styles
-    includeCSS("www/styles.css"),
+    includeCSS("src/app/styles.css"),
     
     # Tabset panel containing map, data tables, and about tabs
     tabsetPanel(
