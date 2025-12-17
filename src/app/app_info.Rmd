@@ -84,7 +84,7 @@ the respective stop’s locations. The weighting gives strong emphasis on
 GPS locations, followed by emphasis on higher quality Argos locations
 compared to lower quality Argos locations. Argos location quality is
 contained in the location class variable. Non-Argos location data are recorded
-with a location class of "G". The weight associated with each class are 
+with a location class of "G". The weights associated with each class are 
 summarized in the following table:
 
 | Argos location class    | Weight |
@@ -99,7 +99,7 @@ summarized in the following table:
 | G (Non-Argos locations) | 5000   |
 
 These derived stop locations are assigned a timestamp equivalent to the
-respective stop’s initial (anchor) tracking location. Note that “stop
+respective stop’s initial (anchor) tracking location. Note that "stop
 locations” are derived averages of the tracking location data (i.e.,
 they are *not* observed data).
 
@@ -121,14 +121,37 @@ meters apart. By identifying metastops, the segmentation algorithm combines
 information from adjacent stops while also preserving the identity of 
 each unique stop.
 
-Unlike stop locations, metastops may consist of only one stop, in which
-case the metastop and the single stop share the same attributes. This
+Metastops may consist of only one stop location, in which case the metastop 
+and the single stop share the same attributes. (Contrast this with stop
+locations, which always consist of at least two raw locations.) This
 ensures that when considered in full, the metastop results comprehensively 
 include all identified stops. When a metastop comprises more than
 one stop, the location of the
 stop with the longest duration (i.e., where the animal spent the most
 time) is used as the recorded metastop location. The timestamp of the
 earliest stop in the metastop is used as the metastop's recorded timestamp.
+
+## Interpreting the map
+
+Before the algorithm has run, the observed location records from the input
+data are displayed in gray. After running the segmentation algorithm with 
+the specified `proximity` and `min_hours` thresholds, the track location 
+map will display the identified metastops and classified location points
+colored by their stop/movement status.
+
+Metastop location markers are displayed in red and are scaled in size relative
+to the number of stops that belong to that metastop.
+
+Other points are classified as either "Stopped", "Movement during stop", 
+or "Movement". Note that those points classified as "Stopped" represent points
+from the *annotated location data* for the animal; these points do not show
+the *derived* stop locations used to identify metastops.
+
+The "Movement during stop" location type is assigned to consecutive
+movement locations that begin and end at the same metastop.
+
+A summary of the identified stops and metastops is also contained in the
+app's "Results" tab.
 
 ## Output
 
@@ -146,10 +169,5 @@ run set of input parameters.
     status at the respective place and time (either "Stopped",
     "Movement", or "Movement during stop").
 
-The "Movement during stop" location type is assigned to consecutive
-movement locations that begin and end at the same metastop.
-
-A summary of the identified stops and metastops is contained in the
-app's "Data" tab. These tables correspond to the `stopovers_*` and
-`metastops_*` output files, with some detail (e.g., digits) removed for
-legibility.
+The `stopovers_*` and `metastops_*` output files correspond to the tables
+shown in the app's "Results" tab (with some detail removed for legibility).

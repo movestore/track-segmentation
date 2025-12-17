@@ -121,10 +121,19 @@ earliest stop in the metastop is used as the metastop's recorded timestamp.
 ### Results
 
 After the algorithm completes, the classified stop, metastop, and movement 
-locations are displayed on an interactive leaflet map. These locations are 
-also summarized in a tabular format in the app's "Results" tab. The app
-saves the results of the classified stop, metastop, and movement locations
-as an app artefact.
+locations are displayed on an interactive leaflet map. 
+
+Metastop location markers are displayed in red and are scaled in size relative
+to the number of stops that belong to that metastop.
+
+Other points are classified as either "Stopped", "Movement during stop", 
+or "Movement". Note that those points classified as "Stopped" represent points
+from the *annotated location data* for the animal; these points do not show
+the *derived* stop locations used to identify metastops.
+
+The classified locations are also summarized in a tabular format in the 
+app's "Results" tab. The app saves the results of the classified stop, 
+metastop, and movement locations as an app artefact.
 
 ### Application scope
 #### Generality of App usability
