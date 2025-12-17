@@ -139,7 +139,7 @@ run set of input parameters.
 -   The `stopovers_*` output file contains one record for each
     identified stop.
 
--   The `metaStops_*` output file contains one record for each metastop.
+-   The `metastops_*` output file contains one record for each metastop.
 
 -   The `locationsAnnotated_*` output file contains one record for each
     input location annotated with a variable denoting the animal's
@@ -151,5 +151,5 @@ movement locations that begin and end at the same metastop.
 
 A summary of the identified stops and metastops is contained in the
 app's "Data" tab. These tables correspond to the `stopovers_*` and
-`metaStops_*` output files, with some detail (e.g., digits) removed for
+`metastops_*` output files, with some detail (e.g., digits) removed for
 legibility.

@@ -158,7 +158,7 @@ the indicated `proximity` and `min_hours` parameters.
     identifier, start and end time for the stop, weighted location of the stop,
     and the number of recorded locations that belong to that stop.
 
--   `metaStops_v014_proxMeters{proximity}_minHours{min_hours}.csv`:
+-   `metastops_v014_proxMeters{proximity}_minHours{min_hours}.csv`:
     contains one record for each metastop, including animal identifier, metastop
     identifier, start and end time for the metastop, location of the metastop,
     and the number of identified stops that belong to that metastop.

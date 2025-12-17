@@ -141,7 +141,7 @@ test_that("Can write results to zip", {
     )
   )
   expect_true(grepl("^stopovers_", internal$filename[1]))
-  expect_true(grepl("^metaStops_", internal$filename[2]))
+  expect_true(grepl("^metastops_", internal$filename[2]))
   expect_true(grepl("^locationsAnnotated_", internal$filename[3]))
   
   s_out <- readr::read_csv(unz(f_out, internal$filename[1]))

@@ -99,7 +99,7 @@ write_results <- function(stops,
                           min_hours,
                           version = app_version()) {
   fnames <- lapply(
-    c("stopovers", "metaStops", "locationsAnnotated"),
+    c("stopovers", "metastops", "locationsAnnotated"),
     function(x) {
       out_file_name(x, proximity, min_hours, version = version)
     }
