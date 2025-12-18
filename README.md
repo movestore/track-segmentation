@@ -32,7 +32,8 @@ The app will be inactive while the algorithm runs. When it finishes, you will
 be able to see the results on the interactive map in the app. Use the
 **Time range of interest** slider to focus on the results for a particular 
 time range. You can also click on the stop and metastop points to view metadata
-about those points.
+about those points and show/hide specific individuals using the panel on the
+right side of the map.
 
 Click on the "Results" tab to see the identified stop and metastop locations
 in tabular format.
@@ -208,17 +209,18 @@ The input data remain unchanged.
 
 ### Most common errors
 
-No recurring errors known at current time
+Input data sources with large numbers of records can cause the interactive
+map in the app to lag, sometimes substantially. In these cases, you can
+use the checkboxes on the right side of the map to hide certain individuals from
+the map, which can improve map reactivity. Note that hiding layers from the map
+is purely for visual exploration purposes and does not remove these individuals
+from the segmentation calculations or the output results files.
+
+To run the segmentation algorithm for a specific subset of tracks, you
+must filter your data to those tracks prior to launching this app.
 
 ### Null or error handling
 
 If the provided distance and stop duration parameters do not identify any
 stops, all locations will be classified as movement locations and no results
 will be shown in the "Results" tab.
-
-Depending on the number of records in the input data, the segmentation
-algorithm may take some time to run. The interactive map may also lag in these
-cases. To avoid this, you can first filter your input data to specific animals
-in a previous step of your workflow. You can use this data subset to fine-tune
-your segmentation parameters, save the selected settings, and re-run the 
-workflow with the full dataset.
