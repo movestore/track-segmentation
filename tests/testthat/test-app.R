@@ -93,8 +93,10 @@ test_that("Expected initial map", {
   
   map <- create_basemap(get_init_bbox(d1, FALSE))
   
+  data_sub <- d1[1:500, ]
+  
   # Plot subset of data to reduce snapshot file size
-  map_data <- d1[1:500,] |> 
+  map_data <- data_sub |> 
     mutate(longitude_adj = get_elon(longitude, dateline = FALSE))
   
   map <- map |> 
@@ -102,7 +104,31 @@ test_that("Expected initial map", {
     addTrackLines(map_data) |> 
     addTrackLocationMarkers(map_data)
   
-  expect_snapshot(map$x)
+  marker_layers <- which(
+    unlist(
+      lapply(
+        map$x$calls,
+        function(x) x$method == "addCircleMarkers"
+      )
+    )
+  )
+  
+  expect_equal(length(marker_layers), 1)
+  
+  map_circles <- map$x$calls[[marker_layers[1]]]$args
+  
+  expect_identical(
+    map_circles[[1]], 
+    data_sub$latitude
+  )
+  expect_identical(
+    map_circles[[2]], 
+    data_sub$longitude
+  )
+  expect_equal(
+    map_circles[[6]]$fillColor,
+    "lightgray"
+  )
 })
 
 test_that("Expected classified map", {
@@ -110,8 +136,10 @@ test_that("Expected classified map", {
   
   map <- create_basemap(get_init_bbox(d1, FALSE))
   
+  data_sub <- data_for_leaflet(metastops)[1:500,]
+  
   # Plot subset of data to reduce snapshot file size
-  map_data <- data_for_leaflet(metastops)[1:500,] |> 
+  map_data <- data_sub |> 
     mutate(longitude_adj = get_elon(longitude, dateline = FALSE))
   
   map <- map |> 
@@ -119,7 +147,62 @@ test_that("Expected classified map", {
     addTrackLines(map_data) |> 
     addTrackStopMarkers(map_data)
   
-  expect_snapshot(map$x)
+  marker_layers <- which(
+    unlist(
+      lapply(
+        map$x$calls,
+        function(x) x$method == "addCircleMarkers"
+      )
+    )
+  )
+  
+  expect_equal(length(marker_layers), 3)
+  
+  map_circles1 <- map$x$calls[[marker_layers[1]]]$args
+  map_circles2 <- map$x$calls[[marker_layers[2]]]$args
+  map_circles3 <- map$x$calls[[marker_layers[3]]]$args
+  
+  # Metastop layer
+  expect_identical(
+    map_circles1[[1]], 
+    data_sub[data_sub$locType == "Metastop", ]$latitude
+  )
+  expect_identical(
+    map_circles1[[2]], 
+    data_sub[data_sub$locType == "Metastop", ]$longitude
+  )
+  expect_equal(
+    unique(map_circles1[[6]]$fillColor),
+    toupper(legend_colors()[1])
+  )
+  
+  # Stopped layer
+  expect_identical(
+    map_circles2[[1]], 
+    data_sub[data_sub$locType == "Stopped", ]$latitude
+  )
+  expect_identical(
+    map_circles2[[2]], 
+    data_sub[data_sub$locType == "Stopped", ]$longitude
+  )
+  expect_equal(
+    unique(map_circles2[[6]]$fillColor),
+    toupper(legend_colors()[2])
+  )
+  
+  # Movement layers
+  expect_identical(
+    map_circles3[[1]], 
+    data_sub[grepl("Movement", data_sub$locType), ]$latitude
+  )
+  expect_identical(
+    map_circles3[[2]], 
+    data_sub[grepl("Movement", data_sub$locType), ]$longitude
+  )
+  expect_setequal(
+    unique(map_circles3[[6]]$fillColor),
+    toupper(legend_colors()[3:4])
+  )
 })
 
 test_that("Can write results to zip", {
