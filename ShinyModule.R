@@ -26,11 +26,18 @@ shinyModule <- function(input, output, session, data) {
   
   # Prep -------------
   
-  data <- data |>
-    arrange(mt_track_id(data), mt_time(data)) |> # Order by track ID and timestamp
-    mt_filter_unique(criterion = "first") # Remove duplicates
+  if (!mt_is_track_id_cleaved(data) || !mt_is_time_ordered(data)) {
+    data <- data |>
+      arrange(mt_track_id(data), mt_time(data)) # Order by track ID and timestamp
+  }
   
-  data <- data[!st_is_empty(data), ] # Remove empty points
+  if (!mt_has_unique_location_time_records(data)) {
+    data <- mt_filter_unique(data, criterion = "first")
+  }
+  
+  if (!mt_has_no_empty_points(data)) {
+    data <- data[!st_is_empty(data), ] # Remove empty points
+  }
   
   crosses_dl <- move2_crosses_dateline(data)
   
