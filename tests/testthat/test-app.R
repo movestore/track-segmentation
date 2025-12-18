@@ -63,7 +63,7 @@ test_that("Correct segmentation results", {
   stop_records <- stops |> filter(!is.na(stopover_lat))
   metastop_records <- metastops |> filter(locType == "Metastop")
   
-  expect_equal(n_stops, 142)
+  expect_equal(nrow(stop_records), 142)
   expect_equal(nrow(stops), nrow(d1) + nrow(stop_records))
   
   expect_equal(
@@ -75,7 +75,7 @@ test_that("Correct segmentation results", {
     "20220314160900_20220315060700_Goat.8810_1600804509"
   )
   
-  expect_equal(n_metastops, 32)
+  expect_equal(nrow(metastop_records), 32)
   expect_equal(nrow(metastops), nrow(d1) + nrow(metastop_records))
   
   expect_equal(
