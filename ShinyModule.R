@@ -75,12 +75,6 @@ shinyModule <- function(input, output, session, data) {
     filter(req(cur_map_data()), timestamp >= tr[1], timestamp <= tr[2])
   })
   
-  # On algorithm start, launch busy spinner. Separating from algorithm itself
-  # ensures spinner starts before processing does.
-  observeEvent(input$recalc, priority = 100, {
-    shinybusy::show_modal_spinner("radar")
-  })
-  
   # Track sliders and change recalc button status when inputs have changed
   observeEvent(list(input$min_hours, input$proximity), {
     recalc_btn_invalid(TRUE)
@@ -98,6 +92,8 @@ shinyModule <- function(input, output, session, data) {
   
   # Identify stop locations for the given proximity and duration inputs
   stop_locations <- reactive({
+    shinybusy::show_modal_spinner("radar", text = "Identifying stops...")
+    
     stops <- tryCatch(
       suppressWarnings(
         find_stop_locations(
@@ -125,6 +121,8 @@ shinyModule <- function(input, output, session, data) {
   
   # Identify metastop locations based on the output stop locations
   metastop_locations <- eventReactive(stop_locations(), {
+    shinybusy::show_modal_spinner("radar", text = "Identifying metastops...")
+    
     stops <- stop_locations()
     
     metastops <- tryCatch(
