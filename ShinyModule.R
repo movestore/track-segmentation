@@ -168,6 +168,11 @@ shinyModule <- function(input, output, session, data) {
     stops <- req(stop_locations())
     metastops <- req(metastop_locations())
     
+    # Add spinner to prevent app from closing before writing is complete
+    shinybusy::show_modal_spinner("radar", text = "Writing results...")
+    
+    t1 <- Sys.time()
+    
     # Remove existing results zip if it exists
     if (!is.null(results_zip())) {
       unlink(results_zip())
@@ -181,14 +186,25 @@ shinyModule <- function(input, output, session, data) {
       stops$min_hours
     )
     
+    tdiff <- Sys.time() - t1
+    
+    # Artificially add a slight delay to the write process. This improves UX
+    # by preventing flashing spinner for small files and making it clear that
+    # write process was initiated and finished.
+    if (tdiff < 0.5) {
+      Sys.sleep(0.5 - tdiff) 
+    }
+    
     showNotification(
       "Results written successfully",
       type = "message",
-      duration = 5
+      duration = 3
     )
     
     write_btn_invalid(FALSE)
     results_zip(f_out)
+    
+    shinybusy::remove_modal_spinner()
   })
   
   # Create the initial base map
