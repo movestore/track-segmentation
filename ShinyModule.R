@@ -27,20 +27,29 @@ shinyModule <- function(input, output, session, data) {
   # Prep -------------
   
   if (!mt_is_track_id_cleaved(data) || !mt_is_time_ordered(data)) {
+    moveapps::logger.info("Arranging data by track ID and time")
     data <- data |>
       arrange(mt_track_id(data), mt_time(data)) # Order by track ID and timestamp
   }
   
   if (!mt_has_unique_location_time_records(data)) {
+    moveapps::logger.info("Removing duplicate timestamps detected in input data")
     data <- mt_filter_unique(data, criterion = "first")
   }
   
   if (!mt_has_no_empty_points(data)) {
+    moveapps::logger.info("Removing empty points detected in input data.")
     data <- data[!st_is_empty(data), ] # Remove empty points
   }
+  
+  moveapps::logger.info("Transforming data to WGS 84 (EPSG: 4326)")
   data <- sf::st_transform(data, crs = 4326)
   
   crosses_dl <- move2_crosses_dateline(data)
+  
+  if (crosses_dl) {
+    moveapps::logger.info("Wrapping tracks around international dateline")
+  }
   
   data <- check_seg_data(move2_to_seg(data))
   
