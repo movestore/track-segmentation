@@ -38,6 +38,7 @@ shinyModule <- function(input, output, session, data) {
   if (!mt_has_no_empty_points(data)) {
     data <- data[!st_is_empty(data), ] # Remove empty points
   }
+  data <- sf::st_transform(data, crs = 4326)
   
   crosses_dl <- move2_crosses_dateline(data)
   
