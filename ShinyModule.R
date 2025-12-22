@@ -73,13 +73,13 @@ shinyModule <- function(input, output, session, data) {
   
   # Handlers for linked checkbox and numeric inputs controlling point thinning
   # in ouput map
-  n_to_filt <- reactive({
+  n_to_thin <- reactive({
     if (!input$should_thin) NULL else input$n_thin
   })
   
   observe({
-    if (!is.null(n_to_filt())) {
-      thinned_data(thin_points(cur_map_data(), n = n_to_filt()))  
+    if (!is.null(n_to_thin())) {
+      thinned_data(thin_points(cur_map_data(), n = n_to_thin()))  
     } else {
       thinned_data(cur_map_data())
     }
