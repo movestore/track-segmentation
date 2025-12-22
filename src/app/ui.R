@@ -19,6 +19,11 @@ segmentationUI <- function(ns,
       title = duration_info(),
       placement = "right"
     ),
+    shinyBS::bsTooltip(
+      id = "thin-info",
+      title = thin_info(),
+      placement = "right"
+    ),
     
     # Styles
     includeCSS("src/app/styles.css"),
@@ -71,7 +76,9 @@ seg_panel <- function(ns, proximity, min_hours, start, end, step) {
     actionButton(ns("recalc"), "Identify stop locations"),
     actionButton(ns("write"), "Write results"),
     hr(),
-    time_range_slider(ns, start, end, step)
+    viz_panel_header(),
+    time_range_slider(ns, start, end, step),
+    thin_input(ns, max_pts = 1000)
   )
 }
 
@@ -104,9 +111,15 @@ time_range_slider_end <- function() {
 
 seg_panel_header <- function() {
   tagList(
-    h4("Segmentation Parameters"),
+    h4("Segmentation parameters"),
     p("Set the location distance and time used to identify stops."),
     p("For more information, see the App Details tab.")
+  )
+}
+
+viz_panel_header <- function() {
+  tagList(
+    h4("Visualization parameters")
   )
 }
 
@@ -131,6 +144,17 @@ duration_input <- function(ns, min_hours = 6) {
   )
 }
 
+thin_input <- function(ns, max_pts) {
+  tagList(
+    checkboxInput(
+      ns("should_thin"), 
+      span("Thin map points", icon("question-circle", id = "thin-info")), 
+      FALSE
+    ),
+    numericInput(ns("n_thin"), "Max points to plot (per individual)", value = max_pts)
+  )
+}
+
 # App tooltip text
 proximity_info <- function() {
   paste0(
@@ -146,6 +170,15 @@ duration_info <- function() {
     "Set the minimum required duration that a stop must persist. ",
     "The elapsed time between the first and last locations in a given stop ",
     "will be greater than this value."
+  )
+}
+
+thin_info <- function() {
+  paste0(
+    "Check this box to display only a subset of tracked locations on the map. ",
+    "Set the number of points to display for each animal in the box below. ",
+    "Identified metastop locations will always be retained in the output map. ",
+    "Use this setting to improve map responsiveness for large datasets."
   )
 }
 

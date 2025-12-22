@@ -228,6 +228,33 @@ addTrackLegend <- function(map, colors, labels, title = "", ...) {
     )
 }
 
+# Randomly select n records for each individual to use as points on the output
+# map. Creates a `display` column indicating whether a particular record
+# is to be displayed on the map. This can improve map rendering speeds and
+# interpretability for overplotted data with excess points.
+thin_points <- function(data, n = 1000) {
+  idx <- unlist(
+    lapply(
+      split(seq_len(nrow(data)), data$animal_id),
+      function(i) {
+        n <- min(n, length(i))
+        sample(i, size = n)
+      }
+    ),
+    use.names = FALSE
+  )
+  
+  data$display <- seq_len(nrow(data)) %in% idx
+  
+  # Always show metastops, as they are derived locations and are necessary
+  # for interpreting the results
+  if ("locType" %in% colnames(data)) {
+    data$display <- ifelse(data$locType == "Metastop", TRUE, data$display)
+  }
+  
+  data
+}
+
 # Build custom HTML legend for the given location type classes
 # Use custom legend to add an additional class for "unclassified" points
 # which will be present on map initialization (before segmentation has run).

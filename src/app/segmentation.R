@@ -456,7 +456,8 @@ tidy_metastop_data <- function(data) {
       n_locs = n_meta,
       timestamp = metastart_time,
       start_time = metastart_time,
-      end_time = metaend_time
+      end_time = metaend_time,
+      display = TRUE
     ) |>
     select(
       -n_meta,
@@ -504,6 +505,7 @@ tidy_metastop_data <- function(data) {
       gis_lon,
       n_locs,
       lc,
+      display,
       -stop_hours,
       -metastop
     ) |>
@@ -523,7 +525,7 @@ data_for_leaflet <- function(data) {
       n_stops = n_locs,
       myRadius = if_else(stopover == 13, ((n_stops / 10 * myRadius) + myRadius), myRadius)
     ) |>
-    select(animal_id, timestamp, latitude, longitude, lc, stop_days, locType, myRadius, stop_id, n_stops) |>
+    select(animal_id, timestamp, latitude, longitude, lc, stop_days, locType, myRadius, stop_id, n_stops, display) |>
     ungroup()
 
   # Validate and filter coordinates
