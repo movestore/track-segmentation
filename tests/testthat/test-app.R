@@ -92,8 +92,6 @@ test_that("Correct segmentation results", {
 })
 
 test_that("Expected initial map", {
-  testthat::local_edition(3)
-  
   map <- create_basemap(get_init_bbox(d1, FALSE))
   
   data_sub <- d1[1:500, ]
@@ -135,8 +133,6 @@ test_that("Expected initial map", {
 })
 
 test_that("Expected classified map", {
-  testthat::local_edition(3)
-  
   map <- create_basemap(get_init_bbox(d1, FALSE))
   
   data_sub <- data_for_leaflet(metastops)[1:500,]
@@ -208,9 +204,22 @@ test_that("Expected classified map", {
   )
 })
 
-# test_that("Can thin data points", {
-#   
-# })
+test_that("Can thin data points", {
+  n1 <- 1
+  n2 <- 1000000
+  
+  x <- thin_points(d1, n = n1)
+  
+  expect_true(all(d1$display))
+  expect_equal(which(x$display), seq(1, nrow(d1), by = ceiling(nrow(d1) / n1)))
+  
+  # Always should start with TRUE, then be FALSE unless all records are selected
+  expect_true(x$display[1])
+  expect_false(x$display[2])
+  
+  # should be identical if n is greater than data nrow
+  expect_identical(d1, thin_points(d1, n = n2))
+})
 
 test_that("Can write results to zip", {
   my_tmp <- paste0(tempdir(), "/")
