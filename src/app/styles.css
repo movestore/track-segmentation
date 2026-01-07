@@ -67,6 +67,23 @@
   width: 320px;
 }
 
+#thin-input > .form-group {
+  margin-bottom: 5px;
+}
+
+#thin-input .checkbox {
+  margin-bottom: 0px;
+}
+
+#thin-input .checkbox label {
+  font-weight: 700;
+}
+
+#thin-input .control-label {
+  font-weight: 100;
+  color: #676767;
+}
+
 .overlay {
   position: absolute;
   top: 0; left:0; right:0; bottom:0;
