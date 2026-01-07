@@ -228,17 +228,16 @@ addTrackLegend <- function(map, colors, labels, title = "", ...) {
     )
 }
 
-# Randomly select n records for each individual to use as points on the output
-# map. Creates a `display` column indicating whether a particular record
-# is to be displayed on the map. This can improve map rendering speeds and
-# interpretability for overplotted data with excess points.
+# Thin data by removing every i'th record for each individual. Creates a 
+# `display` column indicating whether a particular record is to be displayed 
+# on the map. This can improve map rendering speeds and interpretability for 
+# overplotted data with excess points.
 thin_points <- function(data, n = 1000) {
   idx <- unlist(
     lapply(
       split(seq_len(nrow(data)), data$animal_id),
       function(i) {
-        n <- min(n, length(i))
-        sample(i, size = n)
+        i[seq(1, length(i), by = ceiling(length(i) / n))]
       }
     ),
     use.names = FALSE
