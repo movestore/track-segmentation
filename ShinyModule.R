@@ -56,7 +56,7 @@ shinyModule <- function(input, output, session, data) {
   
   # Use sf to identify whether IDL is crossed and build appropriate basemap bbox
   bbox <- get_init_bbox(data, crosses_dl)
-
+  
   # ------------------
   
   results_zip <- reactiveVal(NULL)
@@ -73,9 +73,12 @@ shinyModule <- function(input, output, session, data) {
   
   # Handlers for linked checkbox and numeric inputs controlling point thinning
   # in ouput map
-  n_to_thin <- reactive({
-    if (!input$should_thin) NULL else input$n_thin
-  })
+  n_to_thin <- debounce(
+    reactive({
+      if (!input$should_thin) NULL else input$n_thin
+    }), 
+    millis = 300
+  )
   
   observe({
     if (!is.null(n_to_thin())) {
@@ -157,7 +160,7 @@ shinyModule <- function(input, output, session, data) {
         mutate_empty_stops(data)
       }
     )
-
+    
     # Return inputs to ensure metastop processing uses the same inputs as 
     # were used during stop processing. Don't want metastops to be dependent
     # on current input state
@@ -188,7 +191,7 @@ shinyModule <- function(input, output, session, data) {
         mutate_empty_metastops(stops$result)
       }
     )
-
+    
     recalc_btn_invalid(FALSE) # Action button will now be up to date with map data
     write_btn_invalid(TRUE) # Write results will now be an option
     is_map_init(FALSE) # Map no longer needs to show initial unclassified points
