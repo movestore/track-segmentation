@@ -4,6 +4,9 @@ m2 <- readRDS("../../data/raw/data_godwit_subset.rds") # For testing dateline be
 d1 <- move2_to_seg(m1)
 d2 <- move2_to_seg(m2)
 
+d1$display <- TRUE
+d2$display <- TRUE
+
 stops <- find_stop_locations(d1, min_hours = 6, proximity = 150)
 metastops <- find_metastop_locations(stops, min_hours = 6, proximity = 150)
 
@@ -204,6 +207,10 @@ test_that("Expected classified map", {
     toupper(legend_colors()[3:4])
   )
 })
+
+# test_that("Can thin data points", {
+#   
+# })
 
 test_that("Can write results to zip", {
   my_tmp <- paste0(tempdir(), "/")
