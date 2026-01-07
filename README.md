@@ -36,7 +36,7 @@ time range.
 If your data are very dense, you can also select the "Thin map
 points" option to display a smaller subset of the tracked locations on the map.
 You can specify the number of points to include per animal in the 
-"Max points to plot (per individual)" box.
+"Maximum points to display (per track)" box.
 
 You can also click on the stop and metastop points to view metadata
 about those points and show/hide specific individuals using the panel on the

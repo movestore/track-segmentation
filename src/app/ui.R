@@ -151,7 +151,7 @@ thin_input <- function(ns, max_pts) {
       span("Thin map points", icon("question-circle", id = "thin-info")), 
       FALSE
     ),
-    numericInput(ns("n_thin"), "Max points to plot (per individual)", value = max_pts)
+    numericInput(ns("n_thin"), "Maximum points to display (per track)", value = max_pts)
   )
 }
 
@@ -175,10 +175,11 @@ duration_info <- function() {
 
 thin_info <- function() {
   paste0(
-    "Check this box to display only a subset of tracked locations on the map. ",
-    "Set the number of points to display for each animal in the box below. ",
-    "Identified metastop locations will always be retained in the output map. ",
-    "Use this setting to improve map responsiveness for large datasets."
+    "Check this box to reduce the number of tracked locations displayed on ",
+    "the map. Set the number of points to display for each animal in the box ",
+    "below. Identified metastop locations will always be retained in the ",
+    "output map. Use this setting to improve map responsiveness for large ",
+    "datasets."
   )
 }
 
