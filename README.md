@@ -31,7 +31,14 @@ To run the segmentation algorithm, enter a value in the
 The app will be inactive while the algorithm runs. When it finishes, you will
 be able to see the results on the interactive map in the app. Use the
 **Time range of interest** slider to focus on the results for a particular 
-time range. You can also click on the stop and metastop points to view metadata
+time range. 
+
+If your data are very dense, you can also select the "Thin map
+points" option to display a smaller subset of the tracked locations on the map.
+You can specify the number of points to include per animal in the 
+"Maximum points to display (per track)" box.
+
+You can also click on the stop and metastop points to view metadata
 about those points and show/hide specific individuals using the panel on the
 right side of the map.
 

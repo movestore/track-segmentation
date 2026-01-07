@@ -52,6 +52,7 @@ shinyModule <- function(input, output, session, data) {
   }
   
   data <- check_seg_data(move2_to_seg(data))
+  data$display <- TRUE # All points displayed on initialization
   
   # Use sf to identify whether IDL is crossed and build appropriate basemap bbox
   bbox <- get_init_bbox(data, crosses_dl)
@@ -60,11 +61,40 @@ shinyModule <- function(input, output, session, data) {
   
   results_zip <- reactiveVal(NULL)
   is_map_init <- reactiveVal(TRUE)
+  
+  lines_data <- reactiveVal(data)
+  thinned_data <- reactiveVal(data)
   cur_map_data <- reactiveVal(data)
+  
   map_trigger <- reactiveVal(0)
   recalc_btn_invalid <- reactiveVal(TRUE)
   write_btn_invalid <- reactiveVal(FALSE)
   slider_needs_update <- reactiveVal(TRUE)
+  
+  # Handlers for linked checkbox and numeric inputs controlling point thinning
+  # in ouput map
+  n_to_thin <- debounce(
+    reactive({
+      if (!input$should_thin) NULL else input$n_thin
+    }), 
+    millis = 300
+  )
+  
+  observe({
+    if (!is.null(n_to_thin())) {
+      thinned_data(thin_points(cur_map_data(), n = n_to_thin()))  
+    } else {
+      thinned_data(cur_map_data())
+    }
+  })
+  
+  observeEvent(input$should_thin, {
+    if (input$should_thin) {
+      shinyjs::enable("n_thin")
+    } else {
+      shinyjs::disable("n_thin")
+    }
+  })
   
   # Update time range slider endpoints to reflect data time range on app load
   observe({
@@ -86,10 +116,17 @@ shinyModule <- function(input, output, session, data) {
     isolate(slider_needs_update(FALSE))
   })
   
-  # Filter map data to the input time range
+  # Filter thinned point data to the input time range 
   filt_map_data <- reactive({
     tr <- req(input$time_range)
-    filter(req(cur_map_data()), timestamp >= tr[1], timestamp <= tr[2])
+    filter(req(thinned_data()), timestamp >= tr[1], timestamp <= tr[2])
+  })
+  
+  # Filter lines to the selected time range. Don't use thinned data, as we
+  # always want full linestrings regardless of point thinning
+  filt_lines_data <- reactive({
+    tr <- req(input$time_range)
+    filter(req(lines_data()), timestamp >= tr[1], timestamp <= tr[2])
   })
   
   # Track sliders and change recalc button status when inputs have changed
@@ -123,7 +160,7 @@ shinyModule <- function(input, output, session, data) {
         mutate_empty_stops(data)
       }
     )
-
+    
     # Return inputs to ensure metastop processing uses the same inputs as 
     # were used during stop processing. Don't want metastops to be dependent
     # on current input state
@@ -154,7 +191,7 @@ shinyModule <- function(input, output, session, data) {
         mutate_empty_metastops(stops$result)
       }
     )
-
+    
     recalc_btn_invalid(FALSE) # Action button will now be up to date with map data
     write_btn_invalid(TRUE) # Write results will now be an option
     is_map_init(FALSE) # Map no longer needs to show initial unclassified points
@@ -231,10 +268,16 @@ shinyModule <- function(input, output, session, data) {
     map_trigger()
     
     d <- req(filt_map_data())
+    l <- req(filt_lines_data())
     
     # Handle dateline crossing longitude adjustment on the fly
     d <- d |>
-      mutate(longitude_adj = get_elon(longitude, dateline = crosses_dl))
+      mutate(longitude_adj = get_elon(longitude, dateline = crosses_dl)) |> 
+      filter(display)
+    
+    l <- l |> 
+      mutate(longitude_adj = get_elon(longitude, dateline = crosses_dl)) |> 
+      filter(display)
     
     # Clear existing animals using non-filtered data. Filtered data will no
     # longer contain these animal IDs and they will stick to the map instead of
@@ -242,12 +285,12 @@ shinyModule <- function(input, output, session, data) {
     map <- leafletProxy(ns("map")) |>
       clearGroup(group = unique(data$animal_id)) |>
       addTrackLayersControl(d) |> # Add layer selection panels
-      addTrackLines(d) # Add track lines
+      addTrackLines(l) # Add track lines
     
     # Initial data do not have all necessary attributes for coloring in the same
     # way as processed data. After the first time stops are calculated, we can
     # render with the stop/metastop styling
-    if (is_map_init()) {
+    if (isolate(is_map_init())) {
       map <- addTrackLocationMarkers(map, d)
     } else {
       map <- addTrackStopMarkers(map, d)
