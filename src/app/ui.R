@@ -153,7 +153,7 @@ thin_input <- function(ns, max_pts) {
         span("Thin map points", icon("question-circle", id = "thin-info")), 
         FALSE
       ),
-      numericInput(ns("n_thin"), "Maximum points to display (per track)", value = max_pts)
+      numericInput(ns("n_thin"), "Maximum points to display (per track)", value = max_pts, min = 0)
     )
   )
 }

@@ -75,14 +75,23 @@ shinyModule <- function(input, output, session, data) {
   # in ouput map
   n_to_thin <- debounce(
     reactive({
-      if (!input$should_thin) NULL else input$n_thin
-    }), 
+      if (!input$should_thin) {
+        x <- NULL 
+      } else {
+        x <- input$n_thin
+        req(x > 0)
+      }
+      
+      x
+    }),
     millis = 300
   )
   
   observe({
     if (!is.null(n_to_thin())) {
-      thinned_data(thin_points(cur_map_data(), n = n_to_thin()))  
+      if (!is.na(n_to_thin())) {
+        thinned_data(thin_points(cur_map_data(), n = n_to_thin()))
+      }
     } else {
       thinned_data(cur_map_data())
     }
