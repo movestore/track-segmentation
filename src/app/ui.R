@@ -146,12 +146,15 @@ duration_input <- function(ns, min_hours = 6) {
 
 thin_input <- function(ns, max_pts) {
   tagList(
-    checkboxInput(
-      ns("should_thin"), 
-      span("Thin map points", icon("question-circle", id = "thin-info")), 
-      FALSE
-    ),
-    numericInput(ns("n_thin"), "Maximum points to display (per track)", value = max_pts)
+    div(
+      id = "thin-input",
+      checkboxInput(
+        ns("should_thin"), 
+        span("Thin map points", icon("question-circle", id = "thin-info")), 
+        FALSE
+      ),
+      numericInput(ns("n_thin"), "Maximum points to display (per track)", value = max_pts)
+    )
   )
 }
 
