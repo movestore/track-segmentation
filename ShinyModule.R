@@ -246,6 +246,12 @@ shinyModule <- function(input, output, session, data) {
     
     logger.debug(
       paste0(
+        "Output dir: ", dirname(f_out)
+      )
+    )
+    
+    logger.debug(
+      paste0(
         "files in output dir: ", 
         paste0(list.files(dirname(f_out)), collapse = ", ")
       )
