@@ -229,8 +229,10 @@ shinyModule <- function(input, output, session, data) {
     
     t1 <- Sys.time()
     
+    logger.debug(paste0("Results zip file is: ", results_zip()))
     # Remove existing results zip if it exists
     if (!is.null(results_zip())) {
+      logger.debug(paste0("Unlinking results zip file: ", results_zip()))
       unlink(results_zip())
       results_zip(NULL)
     }
@@ -240,6 +242,13 @@ shinyModule <- function(input, output, session, data) {
       metastops,
       stops$proximity,
       stops$min_hours
+    )
+    
+    logger.debug(
+      paste0(
+        "files in output dir: ", 
+        paste0(list.files(dirname(f_out)), collapse = ", ")
+      )
     )
     
     tdiff <- Sys.time() - t1

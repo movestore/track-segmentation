@@ -116,9 +116,13 @@ write_results <- function(stops,
   tmp <- tempdir()
   out_dir <- file.path(tmp, "track-segmentation")
 
+  logger.debug(paste0("Setting write dir: ", out_dir))
+  
   if (dir.exists(out_dir)) {
+    logger.debug(paste0("Writing files to tempdir: ", out_dir))
     unlink(list.files(out_dir, full.names = TRUE, recursive = TRUE))
   } else {
+    logger.debug(paste0("Dir does not exist. Existing dirs: ", list.files(tmp)))
     dir.create(out_dir)
   }
 
@@ -141,6 +145,7 @@ write_results <- function(stops,
   write.csv(metastops_to_write, files[[2]], row.names = FALSE)
   write.csv(transit_to_write, files[[3]], row.names = FALSE)
 
+  logger.debug(paste0("Writing zip to ", moveapps::appArtifactPath(fname_zip)))
   zip_file <- moveapps::appArtifactPath(fname_zip)
   zip::zip(zip_file, files = unlist(files), mode = "cherry-pick")
 
