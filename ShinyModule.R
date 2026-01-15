@@ -251,6 +251,8 @@ shinyModule <- function(input, output, session, data) {
       Sys.sleep(0.5 - tdiff) 
     }
     
+    moveapps::notifyDone("SHINY")
+    
     showNotification(
       "Results written successfully",
       type = "message",
