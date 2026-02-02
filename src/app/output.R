@@ -148,6 +148,7 @@ write_results <- function(stops,
   logger.debug(paste0("Writing zip to ", moveapps::appArtifactPath(fname_zip)))
   zip_file <- moveapps::appArtifactPath(fname_zip)
   zip::zip(zip_file, files = unlist(files), mode = "cherry-pick")
+  moveapps::notifyDone("SHINY")
 
   zip_file
 }
