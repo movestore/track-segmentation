@@ -234,6 +234,7 @@ shinyModule <- function(input, output, session, data) {
     if (!is.null(results_zip())) {
       logger.debug(paste0("Unlinking results zip file: ", results_zip()))
       unlink(results_zip())
+      moveapps::notifyDone("SHINY")
       results_zip(NULL)
     }
     
