@@ -3,7 +3,7 @@ prep_stops_output <- function(data) {
   if (nrow(data) == 0) {
     return(dplyr::tibble())
   }
-
+  
   data |>
     filter(stopover == 1) |>
     rename(latitude = stopover_lat, longitude = stopover_lon) |>
@@ -26,12 +26,12 @@ prep_metastops_output <- function(data) {
   if (nrow(data) == 0) {
     return(dplyr::tibble())
   }
-
+  
   data |>
     filter(stopover == 13) |>
     select(
       animal_id,
-      meta_stop_id = stop_id,
+      metastop_id = stop_id,
       start_time,
       end_time,
       latitude = gis_lat,
@@ -48,12 +48,24 @@ prep_metastops_output <- function(data) {
 # to link metastops to transit locations
 prep_location_output <- function(data1, data2) {
   if (nrow(data1) == 0 || nrow(data2) == 0) {
-    return(dplyr::tibble())
+    return(
+      dplyr::tibble(
+        animal_id = character(),
+        timestamp = as.POSIXct(character()),
+        latitude = double(),
+        longitude = double(),
+        lc = character(),
+        locType = character(),
+        stop_id = character(),
+        n_stops = integer(),
+        metastop_id = character()
+      )
+    )
   }
-
+  
   temp1 <- data2 |>
     mutate(metastart_time = start_time, metaend_time = end_time) |>
-    select(animal_id, n_stops, metastart_time, metaend_time, meta_stop_id)
+    select(animal_id, n_stops, metastart_time, metaend_time, metastop_id)
 
   # Get non-metastop locations and join back on metastops results to link
   # original transit locations to associated metastops
@@ -72,9 +84,9 @@ prep_location_output <- function(data1, data2) {
       locType,
       stop_id,
       n_stops,
-      meta_stop_id
+      metastop_id
     )
-
+  
   newLocData
 }
 
@@ -104,7 +116,7 @@ write_results <- function(stops,
       out_file_name(x, proximity, min_hours, version = version)
     }
   )
-
+  
   fname_zip <- out_file_name(
     "track_segmentation",
     proximity,
@@ -112,38 +124,38 @@ write_results <- function(stops,
     version = version,
     ext = "zip"
   )
-
+  
   tmp <- tempdir()
   out_dir <- file.path(tmp, "track-segmentation")
-
+  
   if (dir.exists(out_dir)) {
     unlink(list.files(out_dir, full.names = TRUE, recursive = TRUE))
   } else {
     dir.create(out_dir)
   }
-
+  
   files <- list(
     file.path(out_dir, fnames[[1]]),
     file.path(out_dir, fnames[[2]]),
     file.path(out_dir, fnames[[3]])
   )
-
+  
   stops_to_write <- prep_stops_output(stops)
   metastops_to_write <- prep_metastops_output(metastops)
-
+  
   # `metastops` actually contains all movement locations, it's only the prepped
   # metastops output that is filtered. Pass both to prevent recalculation
   # of `metastops_to_write`, though this is admittedly a strange function
   # construction.
   transit_to_write <- prep_location_output(metastops, metastops_to_write)
-
-  write.csv(stops_to_write, files[[1]], row.names = FALSE)
-  write.csv(metastops_to_write, files[[2]], row.names = FALSE)
-  write.csv(transit_to_write, files[[3]], row.names = FALSE)
-
+  
+  write.csv(stops_to_write, files[[1]], row.names = FALSE, na = "")
+  write.csv(metastops_to_write, files[[2]], row.names = FALSE, na = "")
+  write.csv(transit_to_write, files[[3]], row.names = FALSE, na = "")
+  
   zip_file <- moveapps::appArtifactPath(fname_zip)
   zip::zip(zip_file, files = unlist(files), mode = "cherry-pick")
-
+  
   zip_file
 }
 

@@ -4,11 +4,17 @@ MoveApps
 
 Github repository: *github.com/movestore/track-segmentation*
 
+<p align="center">
+  <img src="assets/track-seg-example.png" width="600">
+</p>
+
 ## Description
 
 Segment a time series of location data for individual animals into sequential
 periods of stops and movements based on user-provided location proximity and
-stop duration thresholds. Explore the results in an interactive map.
+stop duration thresholds. Explore the results in an interactive map and annotate
+the input data with new columns identified whether each location as stopped
+or moving.
 
 ## Documentation
 
@@ -150,6 +156,18 @@ After running the algorithm, the results of the classified stop,
 metastop, and movement locations can be saved as an app artifact by clicking
 the "Write results" button.
 
+When the app is closed, the returned data will include 3 new columns
+identifying each location as a stopped or movement location, based on the most
+recent app settings:
+
+  - `locType`: Either `"Stopped"`, `"Movement"`, or `"Movement during stop"`
+    indicating whether this location belongs to a stop, movement or a movement
+    that took place between stops that themselves belonged to a metastop
+  - `stop_id`: A unique identifier for the stop that this location belongs to, if
+    any.
+  - `metastop_id`: A unique identifier for the metastop that this location belongs
+    to, if any.
+
 ### Application scope
 #### Generality of App usability
 
@@ -212,7 +230,17 @@ Workflow runs.
 
 ### Changes in output data
 
-The input data remain unchanged.
+When the app is closed, the returned data will include 3 new columns
+identifying each location as a stopped or movement location, based on the most
+recent app settings:
+
+  - `locType`: Either `"Stopped"`, `"Movement"`, or `"Movement during stop"`
+    indicating whether this location belongs to a stop, movement or a movement
+    that took place between stops that themselves belonged to a metastop
+  - `stop_id`: A unique identifier for the stop that this location belongs to, if
+    any.
+  - `metastop_id`: A unique identifier for the metastop that this location belongs
+    to, if any.
 
 ### Most common errors
 

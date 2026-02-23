@@ -22,8 +22,7 @@ shinyModuleUserInterface <- function(id, label) {
 
 shinyModule <- function(input, output, session, data) {
   ns <- session$ns
-  current <- reactiveVal(data) # For returning input data
-  
+
   # Prep -------------
   
   if (!mt_is_track_id_cleaved(data) || !mt_is_time_ordered(data)) {
@@ -41,6 +40,9 @@ shinyModule <- function(input, output, session, data) {
     moveapps::logger.info("Removing empty points detected in input data.")
     data <- data[!st_is_empty(data), ] # Remove empty points
   }
+  
+  init_data <- data
+  output_data <- reactiveVal(data)
   
   moveapps::logger.info("Transforming data to WGS 84 (EPSG: 4326)")
   data <- sf::st_transform(data, crs = 4326)
@@ -210,13 +212,32 @@ shinyModule <- function(input, output, session, data) {
     metastops
   })
   
-  # Ensure a downstream observer requests metastop values somewhere in app
-  # Otherwise, there is no passive observer that requests these values in the
-  # app and the pipeline is never triggered.
-  observe({
-    metastop_locations()
+  observeEvent(metastop_locations(), {
+    meta <- metastop_locations()
+    
+    metastops_to_write <- prep_metastops_output(meta)
+    transit_to_write <- prep_location_output(meta, metastops_to_write) |> 
+      dplyr::select(animal_id, timestamp, locType, stop_id, metastop_id)
+
+    # Return annotated columns by joining annotated transit df to input move2
+    annotated <- dplyr::left_join(
+      init_data,
+      transit_to_write,
+      by = c(
+        setNames("animal_id", move2::mt_track_id_column(init_data)),
+        setNames("timestamp", move2::mt_time_column(init_data))
+      )
+    )
+
+    annotated <- dplyr::arrange(
+      annotated,
+      mt_track_id(annotated),
+      mt_time(annotated)
+    )
+
+    output_data(annotated) # Update app return value to return annotated data
   })
-  
+
   # When stops and metastops have been calculated, write output results zip
   # automatically. Overwrites any existing results, so only the most recent
   # run is stored.
@@ -356,5 +377,5 @@ shinyModule <- function(input, output, session, data) {
     prettify(prep_metastops_output(d))
   })
   
-  return(reactive({ current() }))
+  return(reactive({ output_data() }))
 }

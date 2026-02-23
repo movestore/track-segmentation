@@ -261,11 +261,11 @@ test_that("Can write results to zip", {
   )
   
   expect_equal(
-    m_out$meta_stop_id[1], 
+    m_out$metastop_id[1], 
     "20210701200400_20210702020900_Goat.8810_1600804509"
   )
   expect_equal(
-    m_out$meta_stop_id[nrow(m_out)], 
+    m_out$metastop_id[nrow(m_out)], 
     "20220314160900_20220315060700_Goat.8810_1600804509"
   )
   
