@@ -24,7 +24,16 @@ prep_stops_output <- function(data) {
 # Reformat metastop results data for display and output CSV file
 prep_metastops_output <- function(data) {
   if (nrow(data) == 0) {
-    return(dplyr::tibble())
+    return(dplyr::tibble(
+      animal_id = character(),
+      metastop_id = character(),
+      start_time = as.POSIXct(integer()),
+      end_time = as.POSIXct(integer()),
+      latitude = double(),
+      longitude = double(),
+      stop_days = integer(),
+      n_stops = integer()
+    ))
   }
   
   data |>
@@ -47,19 +56,21 @@ prep_metastops_output <- function(data) {
 # to prevent need to prep metastops output twice. They will be rejoined
 # to link metastops to transit locations
 prep_location_output <- function(data1, data2) {
-  if (nrow(data1) == 0 || nrow(data2) == 0) {
+  if (nrow(data2) == 0) {
+    # If no stop locations found, we can't attach stop/metastop IDs
+    # to the annotated data. Instead use the annotations already present
+    # (all of which will be "Movement") with empty IDs
     return(
-      dplyr::tibble(
-        animal_id = character(),
-        timestamp = as.POSIXct(character()),
-        latitude = double(),
-        longitude = double(),
-        lc = character(),
-        locType = character(),
-        stop_id = character(),
-        n_stops = integer(),
-        metastop_id = character()
-      )
+      data1 |> 
+        select(
+          animal_id, 
+          timestamp, 
+          latitude = gis_lat, 
+          longitude = gis_lon,
+          lc,
+          locType
+        ) |> 
+        mutate(stop_id = NA_character_, metastop_id = NA_character_)
     )
   }
   
