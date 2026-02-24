@@ -22,7 +22,7 @@ shinyModuleUserInterface <- function(id, label) {
 
 shinyModule <- function(input, output, session, data) {
   ns <- session$ns
-
+  
   # Prep -------------
   
   if (!mt_is_track_id_cleaved(data) || !mt_is_time_ordered(data)) {
@@ -212,32 +212,44 @@ shinyModule <- function(input, output, session, data) {
     metastops
   })
   
-  observeEvent(metastop_locations(), {
+  # Annotate output data once stops are calculated
+  annotated_data <- reactive({
     meta <- metastop_locations()
     
-    metastops_to_write <- prep_metastops_output(meta)
-    transit_to_write <- prep_location_output(meta, metastops_to_write) |> 
-      dplyr::select(animal_id, timestamp, locType, stop_id, metastop_id)
-
-    # Return annotated columns by joining annotated transit df to input move2
-    annotated <- dplyr::left_join(
-      init_data,
-      transit_to_write,
-      by = c(
-        setNames("animal_id", move2::mt_track_id_column(init_data)),
-        setNames("timestamp", move2::mt_time_column(init_data))
+    annotated <- tryCatch({
+      metastops_to_write <- prep_metastops_output(meta)
+      transit_to_write <- prep_location_output(meta, metastops_to_write) |> 
+        dplyr::select(animal_id, timestamp, locType, stop_id, metastop_id)
+      
+      # Return annotated columns by joining annotated transit df to input move2
+      dplyr::left_join(
+        init_data,
+        transit_to_write,
+        by = c(
+          setNames("animal_id", move2::mt_track_id_column(init_data)),
+          setNames("timestamp", move2::mt_time_column(init_data))
+        )
       )
-    )
-
+    }, 
+    error = function(cnd) {
+      init_data
+    })
+    
     annotated <- dplyr::arrange(
       annotated,
       mt_track_id(annotated),
       mt_time(annotated)
     )
-
-    output_data(annotated) # Update app return value to return annotated data
+    
+    annotated
   })
-
+  
+  # If stops are calculated, update output data with processed data. Otherwise
+  # output_data() will return the initial input data
+  observe({
+    output_data(annotated_data())
+  })
+  
   # When stops and metastops have been calculated, write output results zip
   # automatically. Overwrites any existing results, so only the most recent
   # run is stored.
