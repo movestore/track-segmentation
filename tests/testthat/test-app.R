@@ -50,8 +50,8 @@ test_that("Can initialize basemap", {
   expect_equal(
     basemap_methods,
     c(
-      "addTiles", "addProviderTiles", "addDrawToolbar", "addMeasure",
-      "addScaleBar", "addLayersControl", "addControl", "createMapPane",
+      "addTiles", "addProviderTiles", "addDrawToolbar", "addScaleBar",
+      "addMeasure", "addLayersControl", "addControl", "createMapPane",
       "createMapPane", "createMapPane"
     )
   )
