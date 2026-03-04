@@ -15,10 +15,6 @@ create_basemap <- function(bbox) {
         selectedPathOptions = selectedPathOptions()
       )
     ) |>
-    addMeasure(
-      primaryLengthUnit = "kilometers",
-      secondaryLengthUnit = "kilometers"
-    ) |>
     addScaleBar(
       position = "bottomleft", # Position of the scale bar...
       options = scaleBarOptions(
@@ -26,6 +22,11 @@ create_basemap <- function(bbox) {
         imperial = FALSE,
         maxWidth = 400
       )
+    ) |>  
+    addMeasure(
+      primaryLengthUnit = "kilometers",
+      secondaryLengthUnit = "kilometers",
+      position = "bottomleft"
     ) |>
     addLayersControl(
       baseGroups = c("Satellite", "OpenStreetMap"),
