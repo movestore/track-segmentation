@@ -63,12 +63,12 @@
   background: rgba(255,255,255,0.9);
   border-radius: 5px;
   border: 1px solid rgba(0, 0, 0, 0.2);
-  left: 80px; 
+  left: 90px; 
   width: 330px;
-  max-height: calc(100vh - 180px);
-  scrollbar-gutter: stable;
-  overflow-y: auto;
-  overflow-x: hidden;
+}
+
+.leaflet-bottom.leaflet-left {
+  z-index: 200;
 }
 
 #thin-input > .form-group {
